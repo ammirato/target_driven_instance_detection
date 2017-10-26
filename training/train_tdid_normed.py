@@ -7,9 +7,7 @@ from datetime import datetime
 import cv2
 
 from instance_detection.model_defs import network
-#from instance_detection.model_defs.tdid import TDID 
-from instance_detection.model_defs.tdid_depthwise import TDID 
-#from instance_detection.model_defs.tdid_many_measures import TDID 
+from instance_detection.model_defs.tdid_normed import TDID 
 from instance_detection.model_defs.utils.timer import Timer
 from instance_detection.model_defs.fast_rcnn.config import cfg, cfg_from_file
 
@@ -46,7 +44,7 @@ pretrained_model = '/net/bvisionserver3/playpen/ammirato/Data/Detections/pretrai
 output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
 #save_name_base = 'TDID_archMM_10'
-save_name_base = 'TDID_archD_0'
+save_name_base = 'TDID_archN_0'
 save_freq = 1 
 
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
@@ -81,13 +79,13 @@ train_list=[
              'Home_001_2',
              'Home_002_1',
              'Home_004_1',
-             'Home_004_2',
-             'Home_005_1',
-             'Home_005_2',
-             'Home_006_1',
-             'Home_008_1',
-             'Home_014_1',
-             'Home_014_2',
+#             'Home_004_2',
+#             'Home_005_1',
+#             'Home_005_2',
+#             'Home_006_1',
+#             'Home_008_1',
+#             'Home_014_1',
+#             'Home_014_2',
 #              'Gen_002_1',
 #              'Gen_003_1',
 #              'Gen_003_2',
@@ -98,8 +96,8 @@ train_list=[
 #will be further refined by the name_to_id_map loaded later
 #excluded_cids = [53,76,78,79,82,86,16,   1,2,18,21,25]
 excluded_cids = [53,76,78,79,82,86,16,33,32,   1,2,18,21,25]
-chosen_ids =  [x for x in range(0,28) if x not in excluded_cids]
-val_chosen_ids = [chosen_ids]# [[1,2,18,21,25]] #, [5,10,17]]#chosen_ids #range(0,28)#for validation testing
+chosen_ids = [1 ,2 ,18, 21, 25]#  [x for x in range(0,28) if x not in excluded_cids]
+val_chosen_ids = [[1,2,18,21,25]] #, [5,10,17]]#chosen_ids #range(0,28)#for validation testing
 
 max_difficulty = 4 
 
@@ -123,8 +121,6 @@ means = np.array([[[102.9801, 115.9465, 122.7717]]])
 #probably different type is different view
 #each type can have multiple images, 
 #i.e. target_0/* can have multiple images per object
-#target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_single_bb_targets/'
-#target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/sygen_many_bb_similar_targets/'
 target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few/'
 #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen/'
 target_images = get_target_images(target_path,name_to_id.keys(),
@@ -265,7 +261,7 @@ for epoch in range(num_epochs):
         ir_cnt +=1
         net(target_data, im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
         loss = net.loss
-        loss = net.loss*10
+        #loss = net.loss*10
 
         #keep track of loss for print outs
         train_loss += loss.data[0]

@@ -20,6 +20,7 @@ class TDID(nn.Module):
     _feat_stride = [16, ]
     #anchor_scales = [8, 16, 32]
     anchor_scales = [2, 4, 8]
+    groups=512
 
     def __init__(self):
         super(TDID, self).__init__()
@@ -29,11 +30,11 @@ class TDID(nn.Module):
 
 
         #self.input_conv = Conv2d(3,3,1, relu=False, same_padding=True)
-        #self.corr_bn = nn.BatchNorm2d(1)
+        self.corr_bn = nn.BatchNorm2d(self.groups)
 
-        self.conv1 = Conv2d(2,32, 3, relu=False, same_padding=True)
-        self.score_conv = Conv2d(32, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
-        self.bbox_conv = Conv2d(32, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
+        self.conv1 = Conv2d(2*self.groups,512, 3, relu=False, same_padding=True)
+        self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
+        self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
         # loss
         self.cross_entropy = None
@@ -72,8 +73,10 @@ class TDID(nn.Module):
             padding = (max(0,int(tf.size()[2]/2)), 
                              max(0,int(tf.size()[3]/2)))
 
-            cc = F.conv2d(img_features,tf, padding=padding)
-#            cc = self.corr_bn(cc)
+            cc = F.conv2d(img_features,tf.permute(1,0,2,3),
+                          padding=padding, groups=self.groups)
+            cc = self.corr_bn(cc)
+            #print cc.max()
             cross_corrs.append(self.select_to_match_dimensions(cc,img_features))
 
 

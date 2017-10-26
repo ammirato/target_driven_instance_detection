@@ -5,8 +5,8 @@ import cPickle
 import numpy as np
 
 from instance_detection.model_defs import network
-#from instance_detection.model_defs.tdid import TDID 
-from instance_detection.model_defs.tdid_many_measures import TDID 
+from instance_detection.model_defs.tdid import TDID 
+#from instance_detection.model_defs.tdid_many_measures import TDID 
 from instance_detection.model_defs.utils.timer import Timer
 from instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
 
@@ -29,7 +29,7 @@ cfg_file = '../utils/config.yml'
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
                      'saved_models/')
 trained_model_names=[
-                    'TDID_archMM_5_9_8.59312_0.00000',
+                    'TDID_archA_12_1_15.63070_0.00000',
                     #'TDID_archMM_6_9_8.38768_0.00000',
                     ]
 rand_seed = 1024
@@ -186,7 +186,7 @@ if __name__ == '__main__':
              #'test',
              #'Office_001_1'
              ]
-    chosen_ids = [1,5]#range(28)
+    chosen_ids = [1]#range(28)
 
     #CREATE TRAIN/TEST splits
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,

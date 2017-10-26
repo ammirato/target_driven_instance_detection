@@ -72,8 +72,19 @@ class TDID(nn.Module):
             padding = (max(0,int(tf.size()[2]/2)), 
                              max(0,int(tf.size()[3]/2)))
 
+            #do the cross correlation
             cc = F.conv2d(img_features,tf, padding=padding)
-#            cc = self.corr_bn(cc)
+
+            #get the normalization for each location
+            ones_kernel = network.np_to_variable(np.ones(tf.size()), is_cuda=True)
+            eps = .01
+            img_feat_norm = torch.sqrt(F.conv2d(torch.mul(img_features,img_features),
+                                                ones_kernel, padding=padding)) + eps 
+            target_norm = torch.sqrt(torch.mul(tf,tf).sum()) + eps
+            cc = cc / (img_feat_norm*target_norm)
+            print cc.max()
+
+            #cc = self.corr_bn(cc)
             cross_corrs.append(self.select_to_match_dimensions(cc,img_features))
 
 
