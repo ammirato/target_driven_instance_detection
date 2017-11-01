@@ -72,8 +72,10 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     # rpn_bbox_pred = np.transpose(rpn_bbox_pred,[0,3,2,1])
     im_info = im_info[0]
 
-    assert rpn_cls_prob_reshape.shape[0] == 1, \
-        'Only single item batches are supported'
+#    assert rpn_cls_prob_reshape.shape[0] == 1, \
+#        'Only single item batches are supported'
+
+
     # cfg_key = str(self.phase) # either 'TRAIN' or 'TEST'
     # cfg_key = 'TEST'
     pre_nms_topN = cfg[cfg_key].RPN_PRE_NMS_TOP_N

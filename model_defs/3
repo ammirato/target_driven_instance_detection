@@ -146,8 +146,8 @@ def weights_normal_init(model, dev=0.01):
 def clip_gradient(model, clip_norm):
     """Computes a gradient clipping coefficient based on gradient norm."""
     totalnorm = 0
-    for p in model.parameters():
-#    for name,p in model.named_parameters():
+    #for p in model.parameters():
+    for name,p in model.named_parameters():
         if p.requires_grad:
             #print name
 #            try:

@@ -51,9 +51,9 @@ save_freq = 1
 
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'TDID_archA_12_1_15.63070_0.00000.h5'
-load_trained_model = False 
-trained_epoch = 0
+trained_model_name = 'TDID_VID_archD_1_98000_30.15133.h5'
+load_trained_model = True 
+trained_epoch = 98000 
 
 preload_target_images =  False
 

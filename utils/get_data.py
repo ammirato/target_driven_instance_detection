@@ -65,3 +65,34 @@ def get_target_images(target_path, target_names,preload_images=False, for_testin
             target_images[target_name] = all_types
 
     return target_images
+
+
+
+
+
+
+
+
+def match_and_concat_images(img1, img2, min_size=None):
+    """
+    Returns both images stacked and padded with zeros
+
+    """
+    max_rows = max(img1.shape[0], img2.shape[0])
+    max_cols = max(img1.shape[1], img2.shape[1])
+
+    if min_size is not None:
+        max_rows = max(max_rows,min_size)
+        max_cols = max(max_cols,min_size)
+
+    resized_img1 = np.zeros((max_rows,max_cols,img1.shape[2]))
+    resized_img2 = np.zeros((max_rows,max_cols,img2.shape[2]))
+
+    resized_img1[0:img1.shape[0],0:img1.shape[1],:] = img1
+    resized_img2[0:img2.shape[0],0:img2.shape[1],:] = img2
+
+    return np.stack((resized_img1,resized_img2),axis=0) 
+
+
+
+
