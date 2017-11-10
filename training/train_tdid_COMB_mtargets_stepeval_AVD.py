@@ -12,7 +12,9 @@ from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid import TDID 
 #from instance_detection.model_defs.tdid_depthwise_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_batch import TDID 
-from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_sim2_batch import TDID 
+from instance_detection.model_defs.tdid_depthwise_mtargets_simND_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_scales_batch import TDID 
 #from instance_detection.model_defs.tdid_mtargets_split_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_bn_batch import TDID 
@@ -62,7 +64,7 @@ output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
 text_out_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
              '/saved_models_meta/')
 #save_name_base = 'TDID_archMM_10'
-save_name_base = 'TDID_COMB_AVD1_archDmtSimbn_ROI_1'
+save_name_base = 'TDID_COMB_AVD1_archDmtSimNDbn_ROI_0'
 
 save_freq = 1500
 

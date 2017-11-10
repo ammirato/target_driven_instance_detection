@@ -75,19 +75,22 @@ disp_interval =10# cfg.TRAIN.DISPLAY
 log_interval = cfg.TRAIN.LOG_IMAGE_ITERS
 
 # load data
-data_path = '/net/bvisionserver3/playpen/ammirato/Data/HalvedRohitData/'
+data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
 train_list=[
-             'Home_001_1',
-             'Home_001_2',
+             #'Home_001_1',
+             #'Home_001_2',
              'Home_002_1',
+             'Home_003_1',
+             'Home_003_2',
              'Home_004_1',
              'Home_004_2',
              'Home_005_1',
              'Home_005_2',
              'Home_006_1',
-             'Home_008_1',
+             #'Home_008_1',
              'Home_014_1',
              'Home_014_2',
+             'Office_001_1',
 #              'Gen_002_1',
 #              'Gen_003_1',
 #              'Gen_003_2',
@@ -98,6 +101,7 @@ train_list=[
 #will be further refined by the name_to_id_map loaded later
 #excluded_cids = [53,76,78,79,82,86,16,   1,2,18,21,25]
 #excluded_cids = [53,76,78,79,82,86,16,33,32,   1,2,18,21,25]
+excluded_cids = []
 chosen_ids =  [x for x in range(0,32) if x not in excluded_cids]
 val_chosen_ids = [chosen_ids]# [[1,2,18,21,25]] #, [5,10,17]]#chosen_ids #range(0,28)#for validation testing
 
@@ -126,8 +130,9 @@ means = np.array([[[102.9801, 115.9465, 122.7717]]])
 #i.e. target_0/* can have multiple images per object
 #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_single_bb_targets/'
 #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/sygen_many_bb_similar_targets/'
-target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few/'
+#target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few/'
 #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen/'
+target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
 target_images = get_target_images(target_path,name_to_id.keys(),
                                   preload_images=preload_target_images)
 val_target_images = get_target_images(target_path,name_to_id.keys(),
@@ -162,6 +167,8 @@ trainloader = torch.utils.data.DataLoader(train_set,
                                           batch_size=1,
                                           shuffle=True,
                                           collate_fn=AVD.collate)
+
+print chosen_ids
 
 #load net definition and init parameters
 net = TDID()
@@ -294,6 +301,7 @@ for epoch in range(num_epochs):
             log_print('\tcls: %.4f, box: %.4f' % (
                 net.cross_entropy.data.cpu().numpy()[0], net.loss_box.data.cpu().numpy()[0])
             )
+            print chosen_ids
 
     ######################################################
     #epoch over
@@ -305,7 +313,9 @@ for epoch in range(num_epochs):
         #test net on some val data
             data_path = '/net/bvisionserver3/playpen/ammirato/Data/HalvedRohitData/'
             scene_list=[
-                     'Home_003_1',
+                     'Home_001_1',
+                     'Home_001_2',
+                     'Home_008_1',
                      #'Gen_002_1',
                      #'Home_014_1',
                      #'Home_003_2',
