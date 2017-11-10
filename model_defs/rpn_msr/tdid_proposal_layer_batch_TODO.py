@@ -250,7 +250,7 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
                 #labels[max_overlaps >= cfg.TRAIN.RPN_POSITIVE_OVERLAP] = 1 
                 b_labels[max_overlaps >= .5] = 1 
 
-                if cfg.TRAIN.RPN_CLOBBER_POSITIVES:
+                if True:#cfg.TRAIN.RPN_CLOBBER_POSITIVES:
                     # assign bg labels last so that negative labels can clobber positives
                     #labels[max_overlaps < cfg.TRAIN.RPN_NEGATIVE_OVERLAP] = 0 
                     b_labels[max_overlaps < .2] = 0 

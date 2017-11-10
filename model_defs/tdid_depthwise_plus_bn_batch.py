@@ -31,9 +31,11 @@ class TDID(nn.Module):
         self.features = VGG16(bn=False)
 
         self.conv1 = Conv2d(2*self.groups,512, 3, relu=False, same_padding=True)
-        #self.conv2 = Conv2d(512,512, 3, relu=False, same_padding=True)
+        self.conv2 = Conv2d(2*512,512, 3, relu=False, same_padding=True)
         self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
         self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
+
+        self.corr_bn = nn.BatchNorm2d(2*self.groups) 
 
         # loss
         self.cross_entropy = None
@@ -42,8 +44,8 @@ class TDID(nn.Module):
     @property
     def loss(self):
         #return self.roi_cross_entropy
-        #return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
-        return self.cross_entropy + self.loss_box * 10
+        return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
+        #return self.cross_entropy + self.loss_box * 10
 
     def forward(self, target_data, im_data, gt_boxes=None):
 
@@ -70,16 +72,19 @@ class TDID(nn.Module):
         cc = F.conv2d(img_features,target_features,
                       padding=padding, groups=self.groups)
 
+        cc = self.corr_bn(cc)
+
         cc = self.select_to_match_dimensions(cc,img_features)
 
 
         
         rpn_conv1 = self.conv1(cc)
-        #rpn_conv2 = self.conv2(img_features)
+        cat_feats = torch.cat([img_features,rpn_conv1],1)
+        rpn_conv2 = self.conv2(cat_feats)
 
  
         # rpn score
-        rpn_cls_score = self.score_conv(rpn_conv1)
+        rpn_cls_score = self.score_conv(rpn_conv2)
         rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
         rpn_cls_prob = F.softmax(rpn_cls_score_reshape)
         rpn_cls_prob_reshape = self.reshape_layer(rpn_cls_prob, len(self.anchor_scales)*3*2)

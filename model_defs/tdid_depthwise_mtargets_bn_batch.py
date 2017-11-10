@@ -35,6 +35,9 @@ class TDID(nn.Module):
         self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
         self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
+        self.corr_bn = nn.BatchNorm2d(2*self.groups)
+
+
         # loss
         self.cross_entropy = None
         self.loss_box = None
@@ -42,8 +45,8 @@ class TDID(nn.Module):
     @property
     def loss(self):
         #return self.roi_cross_entropy
-        #return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
-        return self.cross_entropy + self.loss_box * 10
+        return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
+        #return self.cross_entropy + self.loss_box * 10
 
     def forward(self, target_data, im_data, gt_boxes=None):
 
@@ -59,20 +62,60 @@ class TDID(nn.Module):
         target_data = network.np_to_variable(target_data, is_cuda=True)
         target_data = target_data.permute(0, 3, 1, 2)
         target_features = self.features(target_data)
-        #reshape target from 2xCxHxW to 2Cx1xHxW for cross corr
-        target_features = target_features.view(-1,1,target_features.size()[2], 
-                                               target_features.size()[3])
+
     
         #get cross correlation of each target's features with image features
         #(same padding)
         padding = (max(0,int(target_features.size()[2]/2)), 
                          max(0,int(target_features.size()[3]/2)))
-        cc = F.conv2d(img_features,target_features,
-                      padding=padding, groups=self.groups)
-
-        cc = self.select_to_match_dimensions(cc,img_features)
 
 
+        ccs = []
+        for b_ind in range(img_features.size()[0]):
+            target_inds = network.np_to_variable(np.asarray([b_ind*2, b_ind*2+1]),
+                                                is_cuda=True, dtype=torch.LongTensor)
+            sample_targets1 = torch.index_select(target_features,0,target_inds[0])
+            sample_targets2 = torch.index_select(target_features,0,target_inds[1])
+            img_ind = network.np_to_variable(np.asarray([b_ind]),
+                                                is_cuda=True, dtype=torch.LongTensor)
+            sample_img = torch.index_select(img_features,0,img_ind)
+
+            sample_targets1 = sample_targets1.view(-1,1,sample_targets1.size()[2], 
+                                                   sample_targets1.size()[3])
+            sample_targets2 = sample_targets2.view(-1,1,sample_targets2.size()[2], 
+                                                   sample_targets2.size()[3])
+       
+            cc1 = F.conv2d(sample_img,sample_targets1,padding=padding,groups=self.groups) 
+            cc2 = F.conv2d(sample_img,sample_targets1,padding=padding,groups=self.groups) 
+            cc = torch.cat([cc1,cc2],1)
+            cc = self.select_to_match_dimensions(cc,sample_img)
+            ccs.append(cc)
+
+        cc = torch.cat(ccs,0)
+        cc = self.corr_bn(cc)
+
+    
+        #reshape target from 2xCxHxW to 2Cx1xHxW for cross corr
+        #target_features = target_features.view(-1,1,target_features.size()[2], 
+        #                                       target_features.size()[3])
+
+#        cc = F.conv2d(img_features,target_features,
+#                      padding=padding, groups=self.groups)
+#
+#        cc = self.select_to_match_dimensions(cc,img_features)
+#
+#        if cc.size()[0] > 1:
+#            chosen_feats = []
+#            for b_ind in range(cc.size()[0]):
+#                b_ind_var = network.np_to_variable(np.asarray([b_ind]),is_cuda=True,dtype=torch.LongTensor)
+#                cf = torch.index_select(cc,0,b_ind_var)
+#                channels = (b_ind+1) * np.arange(self.groups*2)
+#                channels = network.np_to_variable(channels,is_cuda=True,dtype=torch.LongTensor)
+#                cf = torch.index_select(cf,1,channels)
+#                chosen_feats.append(cf)
+#                 
+#        
+#            cc = torch.cat(chosen_feats,0)
         
         rpn_conv1 = self.conv1(cc)
         #rpn_conv2 = self.conv2(img_features)

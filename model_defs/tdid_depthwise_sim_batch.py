@@ -30,10 +30,15 @@ class TDID(nn.Module):
         #first 5 conv layers of VGG? only resizing is 4 max pools
         self.features = VGG16(bn=False)
 
-        self.conv1 = Conv2d(2*self.groups,512, 3, relu=False, same_padding=True)
-        #self.conv2 = Conv2d(512,512, 3, relu=False, same_padding=True)
+        self.tf_view_agg = Conv2d(1024,512, 1, relu=True, same_padding=True)
+        self.conv1 = Conv2d(2*self.groups,256, 1, relu=True, same_padding=True)
+        self.conv2 = Conv2d(2*512+256,512, 3, relu=True, same_padding=True)
+        self.conv3 = Conv2d(512,512, 3, relu=True, same_padding=True)
+        self.conv4 = Conv2d(512,512, 3, relu=True, same_padding=True)
         self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
         self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
+
+
 
         # loss
         self.cross_entropy = None
@@ -42,8 +47,8 @@ class TDID(nn.Module):
     @property
     def loss(self):
         #return self.roi_cross_entropy
-        #return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
-        return self.cross_entropy + self.loss_box * 10
+        return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
+        #return self.cross_entropy + self.loss_box * 10
 
     def forward(self, target_data, im_data, gt_boxes=None):
 
@@ -62,7 +67,9 @@ class TDID(nn.Module):
         #reshape target from 2xCxHxW to 2Cx1xHxW for cross corr
         target_features = target_features.view(-1,1,target_features.size()[2], 
                                                target_features.size()[3])
-    
+   
+
+ 
         #get cross correlation of each target's features with image features
         #(same padding)
         padding = (max(0,int(target_features.size()[2]/2)), 
@@ -71,22 +78,30 @@ class TDID(nn.Module):
                       padding=padding, groups=self.groups)
 
         cc = self.select_to_match_dimensions(cc,img_features)
-
-
-        
         rpn_conv1 = self.conv1(cc)
-        #rpn_conv2 = self.conv2(img_features)
+
+        #get img - target
+        target_features = target_features.permute(1,0,2,3)
+        target_features = self.tf_view_agg(target_features)
+        tf_pooled = F.max_pool2d(target_features,
+                         (target_features.size()[2], target_features.size()[3]))
+        diff = img_features - tf_pooled.expand_as(img_features) 
+        
+        cat_feats = torch.cat([img_features,diff, rpn_conv1],1)
+        rpn_conv2 = self.conv2(cat_feats)
+        rpn_conv3 = self.conv3(rpn_conv2)
+        rpn_conv4 = self.conv4(rpn_conv3)
 
  
         # rpn score
-        rpn_cls_score = self.score_conv(rpn_conv1)
+        rpn_cls_score = self.score_conv(rpn_conv4)
         rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
         rpn_cls_prob = F.softmax(rpn_cls_score_reshape)
         rpn_cls_prob_reshape = self.reshape_layer(rpn_cls_prob, len(self.anchor_scales)*3*2)
 
         # rpn boxes
         #rpn_bbox_pred = self.bbox_conv(rpn_conv1)
-        rpn_bbox_pred = self.bbox_conv(rpn_conv1)
+        rpn_bbox_pred = self.bbox_conv(rpn_conv4)
 
         # proposal layer
         #cfg_key = 'TRAIN' if self.training else 'TEST'

@@ -30,10 +30,10 @@ class TDID(nn.Module):
         #first 5 conv layers of VGG? only resizing is 4 max pools
         self.features = VGG16(bn=False)
 
-        self.conv1 = Conv2d(2*self.groups,512, 3, relu=False, same_padding=True)
+        self.conv1 = Conv2d(2,32, 3, relu=False, same_padding=True)
         #self.conv2 = Conv2d(512,512, 3, relu=False, same_padding=True)
-        self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
-        self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
+        self.score_conv = Conv2d(32, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
+        self.bbox_conv = Conv2d(32, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
         # loss
         self.cross_entropy = None
@@ -42,8 +42,8 @@ class TDID(nn.Module):
     @property
     def loss(self):
         #return self.roi_cross_entropy
-        #return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
-        return self.cross_entropy + self.loss_box * 10
+        return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
+        #return self.cross_entropy + self.loss_box * 10
 
     def forward(self, target_data, im_data, gt_boxes=None):
 
@@ -60,15 +60,15 @@ class TDID(nn.Module):
         target_data = target_data.permute(0, 3, 1, 2)
         target_features = self.features(target_data)
         #reshape target from 2xCxHxW to 2Cx1xHxW for cross corr
-        target_features = target_features.view(-1,1,target_features.size()[2], 
-                                               target_features.size()[3])
+        #target_features = target_features.view(-1,1,target_features.size()[2], 
+        #                                       target_features.size()[3])
     
         #get cross correlation of each target's features with image features
         #(same padding)
         padding = (max(0,int(target_features.size()[2]/2)), 
                          max(0,int(target_features.size()[3]/2)))
         cc = F.conv2d(img_features,target_features,
-                      padding=padding, groups=self.groups)
+                      padding=padding)
 
         cc = self.select_to_match_dimensions(cc,img_features)
 

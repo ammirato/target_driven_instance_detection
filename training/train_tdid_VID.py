@@ -2,15 +2,21 @@ import os
 import sys
 import torch
 import torch.utils.data
+import torchvision.models as models
+
 import numpy as np
 from datetime import datetime
 import cv2
 
-import matplotlib.pyplot as plt
+
+
+#import matplotlib.pyplot as plt
 
 from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid import TDID 
-from instance_detection.model_defs.tdid_depthwise_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_plus_batch import TDID 
+from instance_detection.model_defs.tdid_depthwise_plus_bn_batch import TDID 
 #from instance_detection.model_defs.tdid_many_measures import TDID 
 from instance_detection.model_defs.utils.timer import Timer
 from instance_detection.model_defs.fast_rcnn.config import cfg, cfg_from_file
@@ -45,21 +51,21 @@ def log_print(text, color=None, on_color=None, attrs=None):
 # hyper-parameters
 # ------------
 cfg_file = '../utils/config.yml'
-#pretrained_model = '/net/bvisionserver3/playpen/ammirato/Data/Detections/pretrained_models/VGG_imagenet.npy'
-pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imagenet.npy'
-#output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
-#             '/saved_models/')
-output_dir = ('/playpen/ammirato/Data/Detections/' + 
+pretrained_model = '/net/bvisionserver3/playpen/ammirato/Data/Detections/pretrained_models/VGG_imagenet.npy'
+#pretrained_model = '/playpen/ammirato/Data/Detections/pretrained_models/VGG_imagenet.npy'
+output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
+#output_dir = ('/playpen/ammirato/Data/Detections/' + 
+#             '/saved_models/')
 #save_name_base = 'TDID_archMM_10'
-save_name_base = 'TDID_VID_archD_3'
+save_name_base = 'TDID_VID_archDPlus_ntr_bn_2'
 save_freq = 1 
 
 #trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
 #                     '/saved_models/')
-trained_model_path = ('/playpen/ammirato/Data/Detections/' +
+trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'TDID_VID_archD_1_98000_30.15133.h5'
+trained_model_name = 'TDID_VID_archDPlus_ntr_bn_1_16000_46.40406_33.00000.h5'
 load_trained_model = False 
 trained_step = 0 
 
@@ -70,28 +76,31 @@ preload_target_images =  False
 
 max_steps = 300000 
 
-rand_seed = 1024
+#rand_seed = 1024
 
 # ------------
 
-if rand_seed is not None:
-    np.random.seed(rand_seed)
+#if rand_seed is not None:
+#    np.random.seed(rand_seed)
 
 # load config
 cfg_from_file(cfg_file)
-lr = cfg.TRAIN.LEARNING_RATE 
+lr = cfg.TRAIN.LEARNING_RATE
 momentum = cfg.TRAIN.MOMENTUM
 weight_decay = cfg.TRAIN.WEIGHT_DECAY
 disp_interval =10# cfg.TRAIN.DISPLAY
 log_interval = cfg.TRAIN.LOG_IMAGE_ITERS
 
 # load data
-data_path = '/playpen/ammirato/Downloads/ILSVRC/'
+#data_path = '/playpen/ammirato/Downloads/ILSVRC/'
+data_path = '/net/bvisionserver3/playpen10/ammirato/Data/ILSVRC/'
 
+
+target_size = [200,32]
 
 #CREATE TRAIN/TEST splits
-train_set = VID_Loader(data_path,'train_single')
-val_set = VID_Loader(data_path,'val_single')
+train_set = VID_Loader(data_path,'train_single', target_size=target_size)
+val_set = VID_Loader(data_path,'val_single', target_size=target_size)
 
 #load net definition and init parameters
 net = TDID()
@@ -101,7 +110,9 @@ if load_trained_model:
 else:
     #load pretrained vgg weights, and init everything else randomly
     network.weights_normal_init(net, dev=0.01)
-    network.load_pretrained_tdid(net, pretrained_model)
+    #network.load_pretrained_tdid(net, pretrained_model)
+    vgg16_bn = models.vgg16_bn(pretrained=True)
+    net.features = torch.nn.Sequential(*list(vgg16_bn.features.children())[:-1])
 
 #put net on gpu
 net.cuda()
@@ -124,15 +135,20 @@ t.tic()
 window_loss = 0
 window_steps = 0
 
-for step in range(max_steps):
+for step in range(1,max_steps):
+
 
     #gets a random batch
     batch = train_set[0]
 
     #get first and second images
-    im_data = match_and_concat_images(batch[0],batch[3]) -127
+    #im_data = match_and_concat_images(batch[0],batch[3]) -127
+    im_data = match_and_concat_images(batch[0],batch[3])
+    im_data = ((im_data/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
     #get target images
-    target_data = match_and_concat_images(batch[2][0],batch[2][1])  -127
+    #target_data = match_and_concat_images(batch[2][0],batch[2][1], min_size=16)  -127
+    target_data = match_and_concat_images(batch[2][0],batch[2][1], min_size=16) 
+    target_data = ((target_data/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
 
     #get gt box, add 1 for fg label
     gt_box = batch[1]
@@ -144,7 +160,7 @@ for step in range(max_steps):
     # forward
     net(target_data, im_data, gt_boxes)
     loss = net.loss
-    #loss = net.loss*10
+    loss = net.loss*10
 
     #keep track of loss for print outs
     train_loss += loss.data[0]
@@ -174,11 +190,11 @@ for step in range(max_steps):
 
 
 
-    if step % 1000 == 0:
+    if step % 2000 == 0:
 
         net.eval()
         model_name = save_name_base + '_{}'.format(step)
-        acc, acc_ish,correct,correct_ish = test_net(model_name, net, val_set,num_images=100)
+        acc, acc_ish,correct,correct_ish = test_net(model_name, net, val_set,num_images=200)
         #acc, acc_ish = [0,0] 
 
         dumb_acc_fid = open('./VID_acc_things.txt', 'a')
@@ -192,7 +208,7 @@ for step in range(max_steps):
 
 
 
-    if step % 1000 == 0:
+    #if step % 1000 == 0:
 
         save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}_{:1.5f}.h5'.format(step + trained_step, window_loss/window_steps, correct))
         network.save_net(save_name, net)

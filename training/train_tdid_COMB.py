@@ -2,20 +2,27 @@ import os
 import sys
 import torch
 import torch.utils.data
+import torchvision.models as models
+
 import numpy as np
 from datetime import datetime
 import cv2
 
 from instance_detection.model_defs import network
-from instance_detection.model_defs.tdid import TDID 
-#from instance_detection.model_defs.tdid_depthwise import TDID 
+#from instance_detection.model_defs.tdid import TDID 
+#from instance_detection.model_defs.tdid_depthwise_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_plus_bn_batch import TDID 
+from instance_detection.model_defs.tdid_depthwise_sim_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_scales_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_plus_batch import TDID 
 #from instance_detection.model_defs.tdid_many_measures import TDID 
 from instance_detection.model_defs.utils.timer import Timer
 from instance_detection.model_defs.fast_rcnn.config import cfg, cfg_from_file
 
-from instance_detection.utils.get_data import get_target_images
+from instance_detection.utils.get_data import get_target_images,match_and_concat_images
+from instance_detection.utils.ILSVRC_VID_loader import VID_Loader
 
-from instance_detection.testing.test_tdid import test_net, im_detect
+from instance_detection.testing.test_tdid_batch import test_net, im_detect
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 import active_vision_dataset_processing.data_loading.transforms as AVD_transforms
@@ -45,26 +52,27 @@ cfg_file = '../utils/config.yml'
 pretrained_model = '/net/bvisionserver3/playpen/ammirato/Data/Detections/pretrained_models/VGG_imagenet.npy'
 output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
              '/saved_models/')
+text_out_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
+             '/saved_models_meta/')
 #save_name_base = 'TDID_archMM_10'
-save_name_base = 'TDID_AVD1_archA_0'
+save_name_base = 'TDID_COMBavd_archDDs_ROI_0'
 save_freq = 1 
+
+use_batch_norm = False 
+use_pretrained_vgg = True
+batch_size=2
 
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'TDID_VID_archD_1_98000_30.15133.h5'
+trained_model_name = 'TDID_COMB_archDD_1_16_163.80504_0.31345_0.11395.h5'
 load_trained_model = False 
-trained_epoch = 98000 
+trained_epoch = 0 
 
 preload_target_images =  False
 
 num_epochs = 50 
 
-rand_seed = 1024
 
-# ------------
-
-if rand_seed is not None:
-    np.random.seed(rand_seed)
 
 # load config
 cfg_from_file(cfg_file)
@@ -75,7 +83,7 @@ disp_interval =10# cfg.TRAIN.DISPLAY
 log_interval = cfg.TRAIN.LOG_IMAGE_ITERS
 
 # load data
-data_path = '/net/bvisionserver3/playpen/ammirato/Data/HalvedRohitData/'
+data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
 train_list=[
              'Home_001_1',
              'Home_001_2',
@@ -92,20 +100,20 @@ train_list=[
 #              'Gen_003_1',
 #              'Gen_003_2',
 #              'Gen_003_3',
+#              'Gen_004_2',
             ]
 
 #pick which objects to include
 #will be further refined by the name_to_id_map loaded later
 #excluded_cids = [53,76,78,79,82,86,16,   1,2,18,21,25]
-#excluded_cids = [53,76,78,79,82,86,16,33,32,   1,2,18,21,25]
-chosen_ids =  [x for x in range(0,32) if x not in excluded_cids]
-val_chosen_ids = [chosen_ids]# [[1,2,18,21,25]] #, [5,10,17]]#chosen_ids #range(0,28)#for validation testing
+excluded_cids =  [53,76,78,79,82,86,16,33,32,]#  10, 5,11,12,14]
+chosen_ids =  [x for x in range(0,28) if x not in excluded_cids]
+val_chosen_ids = [chosen_ids,[5,11,12,14]] #[[4,5,17,19],[5,11,12,14]] #, [5,10,17]]#chosen_ids #range(0,28)#for validation testing
 
 max_difficulty = 4 
 
-map_fname = 'all_instance_id_map.txt'
 #get a map from instance name to id, and back
-id_to_name = GetDataSet.get_class_id_to_name_dict(data_path, file_name=map_fname)
+id_to_name = GetDataSet.get_class_id_to_name_dict(data_path)
 name_to_id = {}
 for cid in id_to_name.keys():
     name_to_id[id_to_name[cid]] = cid
@@ -126,12 +134,16 @@ means = np.array([[[102.9801, 115.9465, 122.7717]]])
 #i.e. target_0/* can have multiple images per object
 #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_single_bb_targets/'
 #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/sygen_many_bb_similar_targets/'
-target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few/'
-#target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen/'
+#target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few/'
+target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen/'
 target_images = get_target_images(target_path,name_to_id.keys(),
-                                  preload_images=preload_target_images)
-val_target_images = get_target_images(target_path,name_to_id.keys(),
-                                      for_testing=True, means=means)
+                                  preload_images=preload_target_images,means=None)
+if use_batch_norm:
+    val_target_images = get_target_images(target_path,name_to_id.keys(),
+                                          for_testing=True, bn_normalize=True)
+else:
+    val_target_images = get_target_images(target_path,name_to_id.keys(),
+                                          for_testing=True, means=means)
 
 
 
@@ -155,23 +167,68 @@ train_set = GetDataSet.get_fasterRCNN_AVD(data_path,
                                           max_difficulty=max_difficulty,
                                           chosen_ids=chosen_ids,
                                           by_box=False,
-                                          fraction_of_no_box=0.02)
+                                          fraction_of_no_box=0.02,
+                                          bn_normalize=use_batch_norm)
 
 #create train/test loaders, with CUSTOM COLLATE function
 trainloader = torch.utils.data.DataLoader(train_set,
-                                          batch_size=1,
+                                          batch_size=batch_size,
                                           shuffle=True,
                                           collate_fn=AVD.collate)
+
+
+
+
+
+
+VID_data_path = '/net/bvisionserver3/playpen10/ammirato/Data/ILSVRC/'
+target_size = [200,16]
+#CREATE TRAIN/TEST splits
+train_set = VID_Loader(VID_data_path,'train_single', target_size=target_size)
+
+
+
+#write meta data out
+meta_fid = open(os.path.join(text_out_dir,save_name_base+'.txt'),'w')
+meta_fid.write('save name: {}\n'.format(save_name_base))
+meta_fid.write('batch norm: {}\n'.format(use_batch_norm))
+meta_fid.write('pretrained vgg: {}\n'.format(use_pretrained_vgg))
+meta_fid.write('batch_size: {}\n'.format(batch_size))
+meta_fid.write('chosen_ids: {}\n'.format(chosen_ids))
+meta_fid.write('val chosen_ids: {}\n'.format(val_chosen_ids))
+meta_fid.write('train_list: {}\n'.format(train_list))
+meta_fid.write('target_path: {}\n'.format(target_path))
+meta_fid.write('VID_target_size: {}\n'.format(target_size))
+meta_fid.write('vid_set: {}\n'.format('train_single'))
+meta_fid.write('learing rate: {}\n'.format(lr))
+if load_trained_model:
+    meta_fid.write('start from: {}\n'.format(trained_model_name))
+meta_fid.close()
+
 
 #load net definition and init parameters
 net = TDID()
 if load_trained_model:
     #load a previously trained model
+    if use_batch_norm:
+        vgg16_bn = models.vgg16_bn(pretrained=False)
+        net.features = torch.nn.Sequential(*list(vgg16_bn.features.children())[:-1])
+
+
     network.load_net(trained_model_path + trained_model_name, net)
 else:
     #load pretrained vgg weights, and init everything else randomly
     network.weights_normal_init(net, dev=0.01)
-    network.load_pretrained_tdid(net, pretrained_model)
+    if use_batch_norm:
+        if use_pretrained_vgg:
+            vgg16_bn = models.vgg16_bn(pretrained=True)
+        else:
+            vgg16_bn = models.vgg16_bn(pretrained=False)
+        net.features = torch.nn.Sequential(*list(vgg16_bn.features.children())[:-1])
+    else:
+        if use_pretrained_vgg:
+            network.load_pretrained_tdid(net, pretrained_model)
+
 
 #put net on gpu
 net.cuda()
@@ -207,17 +264,37 @@ for epoch in range(num_epochs):
     epoch_step_cnt = 0
     for step,batch in enumerate(trainloader):
 
+        if type(batch[0]) is not list:
+            continue
+
         # get one batch, image and bounding boxes
-        im_data=batch[0].unsqueeze(0).numpy()
-        im_data=np.transpose(im_data,(0,2,3,1))
-        gt_boxes = np.asarray(batch[1][0],dtype=np.float32)
+        #im_data=batch[0].unsqueeze(0).numpy()
+        im_data=batch[0][0].numpy()
+
+        
+
+        im_data=np.transpose(im_data,(1,2,0)) 
+
+        im_data2=batch[0][1].numpy()
+        im_data2=np.transpose(im_data2,(1,2,0)) 
+        im_data = match_and_concat_images(im_data,im_data2)
+        #im_data = ((im_data/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
+
+
+        gt_boxes = np.asarray(batch[1][0][0],dtype=np.float32) 
+        gt_boxes2 = np.asarray(batch[1][1][0],dtype=np.float32)
         #if there are no boxes for this image, add a dummy background box
         if gt_boxes.shape[0] == 0:
             gt_boxes = np.asarray([[0,0,1,1,0]])
- 
+        if gt_boxes2.shape[0] == 0:
+            gt_boxes2 = np.asarray([[0,0,1,1,0]])
+
+
         #get the gt inds that are in this image, not counting 0(background)
         objects_present = gt_boxes[:,4]
+        objects_present2 = gt_boxes2[:,4]
         objects_present = objects_present[np.where(objects_present!=0)[0]]
+        objects_present2 = objects_present2[np.where(objects_present2!=0)[0]]
         #get the ids of objects that are not in this image
         not_present = np.asarray([ind for ind in chosen_ids 
                                           if ind not in objects_present and 
@@ -225,9 +302,9 @@ for epoch in range(num_epochs):
 
         #pick a random target, with a bias towards choosing a target that 
         #is in the image. Also pick just that object's gt_box
-        if (np.random.rand() < .6 or not_present.shape[0]==0) and objects_present.shape[0]!=0:
+        if (np.random.rand() < .8 or not_present.shape[0]==0) and objects_present.shape[0]!=0:
             target_ind = int(np.random.choice(objects_present))
-            gt_boxes = gt_boxes[np.where(gt_boxes[:,4]==target_ind)[0],:-1]
+            gt_boxes = gt_boxes[np.where(gt_boxes[:,4]==target_ind)[0],:-1] 
             gt_boxes[0,4] = 1
 
             tv_cnt += 1
@@ -235,6 +312,14 @@ for epoch in range(num_epochs):
         else:#the target is not in the image, give a dummy background box
             target_ind = int(np.random.choice(not_present))
             gt_boxes = np.asarray([[0,0,1,1,0]])
+
+        if target_ind in objects_present2:
+            gt_box2 = gt_boxes2[np.where(gt_boxes2[:,4]==target_ind)[0],:-1] 
+            gt_box2[0,4] = 1
+        else:
+            gt_box2 = np.asarray([[0,0,1,1,0]])
+
+        gt_boxes = np.concatenate((gt_boxes,gt_box2)) 
 
         #get the target images
         targets_cnt[target_ind][1] += 1 
@@ -251,10 +336,16 @@ for epoch in range(num_epochs):
                 target_img = cv2.imread(target_images[target_name][t_type][img_ind])
 
             #subtract means, give batch dimension, add to list
-            target_img = target_img - means
+            if use_batch_norm:
+                target_img = ((target_img/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225] 
+            else:
+                target_img = target_img - means
+
             target_img = np.expand_dims(target_img,axis=0)
             target_data.append(target_img)
-        
+
+        target_data = match_and_concat_images(target_data[0][0,:],target_data[1][0,:])
+        #target_data = ((target_data/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225] 
 
         #TODO: lose this stuff
         im_info = np.zeros((1,3))
@@ -264,7 +355,7 @@ for epoch in range(num_epochs):
 
         # forward
         ir_cnt +=1
-        net(target_data, im_data, im_info, gt_boxes, gt_ishard, dontcare_areas)
+        net(target_data, im_data,gt_boxes=gt_boxes)
         loss = net.loss
         loss = net.loss*10
 
@@ -280,14 +371,94 @@ for epoch in range(num_epochs):
         network.clip_gradient(net, 10.)
         optimizer.step()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+        #gets a random batch
+        batch = train_set[0]
+
+        #get first and second images
+        #im_data = match_and_concat_images(batch[0],batch[3]) -127
+        im_data = match_and_concat_images(batch[0],batch[3])
+        if use_batch_norm:
+            im_data = ((im_data/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
+        else:
+            im_data = im_data - means
+        #get target images
+        #target_data = match_and_concat_images(batch[2][0],batch[2][1], min_size=16)  -127
+        target_data = match_and_concat_images(batch[2][0],batch[2][1], min_size=16) 
+        if use_batch_norm:
+            target_data = ((target_data/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
+        else:
+            target_data = target_data-means
+
+        #get gt box, add 1 for fg label
+        gt_box = batch[1]
+        gt_box.append(1)
+        gt_box = np.asarray(gt_box,dtype=np.float32)
+        #1 gt_box for each image, the second is a dummy box since there is no fg
+        gt_boxes = np.asarray([gt_box, [0,0,1,1,0]])
+
+        # forward
+        net(target_data, im_data, gt_boxes)
+        loss = net.loss
+        loss = net.loss*10
+
+        #keep track of loss for print outs
+        #train_loss += loss.data[0]
+        #step_cnt += 1
+        #window_loss += loss.data[0]
+        #window_steps += 1.0 
+
+        # backprop and parameter update
+        optimizer.zero_grad()
+        loss.backward()
+        network.clip_gradient(net, 10.)
+        optimizer.step()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         #print out training info
         if step % disp_interval == 0:
             duration = t.toc(average=False)
             fps = step_cnt / duration
 
             log_text = 'step %d, epoch_avg_loss: %.4f, fps: %.2f (%.2fs per batch) tv_cnt:%d' \
-                       'ir_cnt:%d epoch:%d loss: %.4f tot_avg_loss: %.4f' % (
-                step,  epoch_loss/epoch_step_cnt, fps, 1./fps, tv_cnt, ir_cnt, epoch, loss.data[0],train_loss/step_cnt)
+                       'ir_cnt:%d epoch:%d loss: %.4f tot_avg_loss: %.4f %s' % (
+                step,  epoch_loss/epoch_step_cnt, fps, 1./fps, tv_cnt, ir_cnt, epoch, loss.data[0],train_loss/step_cnt, save_name_base)
             log_print(log_text, color='green', attrs=['bold'])
             print(targets_cnt)
 
@@ -303,7 +474,7 @@ for epoch in range(num_epochs):
         m_aps = []
         for vci in val_chosen_ids:
         #test net on some val data
-            data_path = '/net/bvisionserver3/playpen/ammirato/Data/HalvedRohitData/'
+            data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
             scene_list=[
                      'Home_003_1',
                      #'Gen_002_1',
@@ -320,7 +491,8 @@ for epoch in range(num_epochs):
                                                     chosen_ids=vci, 
                                                     by_box=False,
                                                     max_difficulty=max_difficulty,
-                                                    fraction_of_no_box=0)
+                                                    fraction_of_no_box=.01,
+                                                    bn_normalize=use_batch_norm)
 
             #create train/test loaders, with CUSTOM COLLATE function
             valloader = torch.utils.data.DataLoader(valset,
@@ -356,7 +528,7 @@ for epoch in range(num_epochs):
             save_epoch = epoch+trained_epoch+1
 
         #save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}_{:1.5f}_{:1.5f}.h5'.format(save_epoch, epoch_loss/epoch_step_cnt, m_aps[0], m_aps[0]))
-        save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}_{:1.5f}.h5'.format(save_epoch, epoch_loss/epoch_step_cnt, m_aps[0]))
+        save_name = os.path.join(output_dir, save_name_base+'_{}_{:1.5f}_{:1.5f}_{:1.5f}.h5'.format(save_epoch, epoch_loss/epoch_step_cnt, m_aps[0], m_aps[1]))
         network.save_net(save_name, net)
         print('save model: {}'.format(save_name))
 

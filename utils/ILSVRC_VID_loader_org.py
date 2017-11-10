@@ -81,93 +81,50 @@ class VID_Loader(object):
             print 'Only batch random sampling currently supported!'
             return -1
 
-
-
-        if self.multiple_targets:
-
-            all_batch_inds = np.random.choice(len(self.video_data_paths),self.batch_size)
-            all_imgs = []
-            all_t_imgs = []
-            all_boxes = []
-            for batch_ind in all_batch_inds:
-                #pick two random videos
-                v1_path = self.video_data_paths[batch_ind]
-                #pick three random frames from the first video
-                #get the annotations from these 3 frames
-                v1_image_paths = glob.glob(os.path.join(v1_path,'*.JPEG'))
-                inds = np.random.choice(len(v1_image_paths),3)
-                v1_img = cv2.imread(v1_image_paths[inds[0]])
-                v1_bbox = self._get_bbox_from_data_path(v1_image_paths[inds[0]])
-                v1_bbox.append(1) #obj id (this is an object)
-                t_imgs = []
-                for ind in inds[1:]:
-                    full_img = cv2.imread(v1_image_paths[ind])
-                    bbox = self._get_bbox_from_data_path(v1_image_paths[ind])
-                    #crop the second and third frame around the object of interest
-                    t_img = full_img[bbox[1]:bbox[3], bbox[0]:bbox[2], :]
-                    if self.target_size is not None:
-                        large_side = np.max(t_img.shape)
-                        if large_side > self.target_size[0]:
-                            scale_factor = float(self.target_size[0])/large_side
-                            t_img = cv2.resize(t_img,(int(t_img.shape[1]*scale_factor),
-                                                          int(t_img.shape[0]*scale_factor)))
-
-                        if np.min(t_img.shape[:2]) < self.target_size[1]:
-                            if t_img.shape[0] < self.target_size[1]:
-                                blank_img = np.zeros((self.target_size[1], t_img.shape[1],t_img.shape[2]))
-                            else:
-                                blank_img = np.zeros((t_img.shape[0],self.target_size[1],t_img.shape[2]))
-                            blank_img[0:t_img.shape[0],0:t_img.shape[1],:] = t_img
-                            t_img = blank_img
-
-                    t_imgs.append(t_img)
-
-
-
-
-                all_imgs.append(v1_img)
-                all_boxes.append(v1_bbox)
-                all_t_imgs.extend(t_imgs)
-
-
-
-            return [all_imgs,all_boxes,all_t_imgs]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        else:
         
-            #pick two random videos
-            inds = np.random.choice(len(self.video_data_paths),2)
-            v1_path = self.video_data_paths[inds[0]]
-            v2_path = self.video_data_paths[inds[1]]
-            #pick three random frames from the first video
-            #get the annotations from these 3 frames
-            v1_image_paths = glob.glob(os.path.join(v1_path,'*.JPEG'))
-            inds = np.random.choice(len(v1_image_paths),3)
-            v1_img = cv2.imread(v1_image_paths[inds[0]])
-            v1_bbox = self._get_bbox_from_data_path(v1_image_paths[inds[0]])
-            t_imgs = []
+        #pick two random videos
+        inds = np.random.choice(len(self.video_data_paths),2)
+        v1_path = self.video_data_paths[inds[0]]
+        v2_path = self.video_data_paths[inds[1]]
+        #pick three random frames from the first video
+        #get the annotations from these 3 frames
+        v1_image_paths = glob.glob(os.path.join(v1_path,'*.JPEG'))
+        inds = np.random.choice(len(v1_image_paths),3)
+        v1_img = cv2.imread(v1_image_paths[inds[0]])
+        v1_bbox = self._get_bbox_from_data_path(v1_image_paths[inds[0]])
+        t_imgs = []
+        for ind in inds[1:]:
+            full_img = cv2.imread(v1_image_paths[ind])
+            bbox = self._get_bbox_from_data_path(v1_image_paths[ind])
+            #crop the second and third frame around the object of interest
+            t_img = full_img[bbox[1]:bbox[3], bbox[0]:bbox[2], :]
+            if self.target_size is not None:
+                large_side = np.max(t_img.shape)
+                if large_side > self.target_size[0]:
+                    scale_factor = float(self.target_size[0])/large_side
+                    t_img = cv2.resize(t_img,(int(t_img.shape[1]*scale_factor),
+                                                  int(t_img.shape[0]*scale_factor)))
+
+                if np.min(t_img.shape[:2]) < self.target_size[1]:
+                    if t_img.shape[0] < self.target_size[1]:
+                        blank_img = np.zeros((self.target_size[1], t_img.shape[1],t_img.shape[2]))
+                    else:
+                        blank_img = np.zeros((t_img.shape[0],self.target_size[1],t_img.shape[2]))
+                    blank_img[0:t_img.shape[0],0:t_img.shape[1],:] = t_img
+                    t_img = blank_img
+
+            t_imgs.append(t_img)
+
+        #pick one random frame from the second video 
+        v2_image_paths = glob.glob(os.path.join(v2_path,'*.JPEG'))
+        inds = np.random.choice(len(v2_image_paths),3)
+        v2_img = cv2.imread(v2_image_paths[inds[0]])
+        if self.multiple_targets: #if pick targets for this image too
+            v2_bbox = self._get_bbox_from_data_path(v2_image_paths[inds[0]])
+            t2_imgs = []
             for ind in inds[1:]:
-                full_img = cv2.imread(v1_image_paths[ind])
-                bbox = self._get_bbox_from_data_path(v1_image_paths[ind])
+                full_img = cv2.imread(v2_image_paths[ind])
+                bbox = self._get_bbox_from_data_path(v2_image_paths[ind])
                 #crop the second and third frame around the object of interest
                 t_img = full_img[bbox[1]:bbox[3], bbox[0]:bbox[2], :]
                 if self.target_size is not None:
@@ -185,40 +142,11 @@ class VID_Loader(object):
                         blank_img[0:t_img.shape[0],0:t_img.shape[1],:] = t_img
                         t_img = blank_img
 
-                t_imgs.append(t_img)
+                t2_imgs.append(t_img)
+            return [v1_img, v1_bbox, t_imgs, v2_img, v2_bbox,t2_imgs]
 
-            #pick one random frame from the second video 
-            v2_image_paths = glob.glob(os.path.join(v2_path,'*.JPEG'))
-            inds = np.random.choice(len(v2_image_paths),3)
-            v2_img = cv2.imread(v2_image_paths[inds[0]])
-            if self.multiple_targets: #if pick targets for this image too
-                v2_bbox = self._get_bbox_from_data_path(v2_image_paths[inds[0]])
-                t2_imgs = []
-                for ind in inds[1:]:
-                    full_img = cv2.imread(v2_image_paths[ind])
-                    bbox = self._get_bbox_from_data_path(v2_image_paths[ind])
-                    #crop the second and third frame around the object of interest
-                    t_img = full_img[bbox[1]:bbox[3], bbox[0]:bbox[2], :]
-                    if self.target_size is not None:
-                        large_side = np.max(t_img.shape)
-                        if large_side > self.target_size[0]:
-                            scale_factor = float(self.target_size[0])/large_side
-                            t_img = cv2.resize(t_img,(int(t_img.shape[1]*scale_factor),
-                                                          int(t_img.shape[0]*scale_factor)))
-
-                        if np.min(t_img.shape[:2]) < self.target_size[1]:
-                            if t_img.shape[0] < self.target_size[1]:
-                                blank_img = np.zeros((self.target_size[1], t_img.shape[1],t_img.shape[2]))
-                            else:
-                                blank_img = np.zeros((t_img.shape[0],self.target_size[1],t_img.shape[2]))
-                            blank_img[0:t_img.shape[0],0:t_img.shape[1],:] = t_img
-                            t_img = blank_img
-
-                    t2_imgs.append(t_img)
-                return [v1_img, v1_bbox, t_imgs, v2_img, v2_bbox,t2_imgs]
-
-            else: 
-                return [v1_img, v1_bbox, t_imgs, v2_img]
+        else: 
+            return [v1_img, v1_bbox, t_imgs, v2_img]
 
 
 

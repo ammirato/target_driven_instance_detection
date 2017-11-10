@@ -5,7 +5,7 @@ import cPickle
 import numpy as np
 
 from instance_detection.model_defs import network
-from instance_detection.model_defs.tdid_depthwise_batch import TDID 
+from instance_detection.model_defs.tdid_depthwise_plus_batch import TDID 
 from instance_detection.model_defs.utils.timer import Timer
 from instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
 
@@ -25,10 +25,10 @@ import json
 # hyper-parameters
 # ------------
 cfg_file = '../utils/config.yml'
-#trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
-#                     'saved_models/')
-trained_model_path = ('/playpen/ammirato/Data/Detections/' + 
+trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
                      'saved_models/')
+#trained_model_path = ('/playpen/ammirato/Data/Detections/' + 
+#                     'saved_models/')
 rand_seed = 1024
 max_per_target = 5 
 thresh = 0.05
@@ -148,6 +148,8 @@ def test_net(model_name, net, dataset, num_images=100, batch=False,
                 image_thresh = np.sort(image_scores)[-max_per_target]
                 keep = np.where(fg_dets[:, -1] >= image_thresh)[0]
                 fg_dets = fg_dets[keep, :]
+                if len(fg_dets) > max_per_target:
+                    breakp = 1
         nms_time = _t['misc'].toc(average=False)
 
         print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
@@ -182,15 +184,15 @@ def test_net(model_name, net, dataset, num_images=100, batch=False,
 if __name__ == '__main__':
 
     trained_model_names=[
-                        'TDID_VID_archD_1_4000_23.06606_0.06491',
+                        'TDID_VID_archDPlus_ntr_0_8000_81.54629_50.00000',
                         #'TDID_archMM_6_9_8.38768_0.00000',
                         ]
 
     # load data
-    data_path = '/playpen/ammirato/Downloads/ILSVRC/'
+    data_path = '/net/bvisionserver3/playpen10/ammirato/Data/ILSVRC/'
 
     #CREATE TRAIN/TEST splits
-    data_set = VID_Loader(data_path,'val_single')
+    data_set = VID_Loader(data_path,'val_single', target_size=[200,16])
 
     num_images = 100
     batch = True

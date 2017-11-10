@@ -30,7 +30,15 @@ class TDID(nn.Module):
         #first 5 conv layers of VGG? only resizing is 4 max pools
         self.features = VGG16(bn=False)
 
-        self.conv1 = Conv2d(2*self.groups,512, 3, relu=False, same_padding=True)
+
+        self.cc_conv1 = Conv2d(2*self.groups,256, 1, relu=False, same_padding=True)
+        self.diff_conv1 = Conv2d(2*512,256, 1, relu=False, same_padding=True)
+        self.sim_conv1 = Conv2d(2*512,2*512, 3, relu=True, same_padding=True)
+        self.sim_conv2 = Conv2d(2*512,512, 3, relu=True, same_padding=True)
+        self.sim_conv3 = Conv2d(512,512, 3, relu=True, same_padding=True)
+
+
+        #self.conv1 = Conv2d(2*self.groups,512, 3, relu=False, same_padding=True)
         #self.conv2 = Conv2d(512,512, 3, relu=False, same_padding=True)
         self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
         self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
@@ -42,51 +50,87 @@ class TDID(nn.Module):
     @property
     def loss(self):
         #return self.roi_cross_entropy
-        #return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
-        return self.cross_entropy + self.loss_box * 10
+        return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
+        #return self.cross_entropy + self.loss_box * 10
 
-    def forward(self, target_data, im_data, gt_boxes=None):
+    def forward(self, target_data, im_data, gt_boxes=None,features_given=False, im_info=None):
 
-        im_info = im_data.shape[1:]   
-      
-        #get image features 
-        im_data = network.np_to_variable(im_data, is_cuda=True)
-        im_data = im_data.permute(0, 3, 1, 2)
-        img_features = self.features(im_data)
-       
+     
+        if not features_given: 
+            im_info = im_data.shape[1:]   
+            #get image features 
+            im_data = network.np_to_variable(im_data, is_cuda=True)
+            im_data = im_data.permute(0, 3, 1, 2)
+            img_features = self.features(im_data)
+     
+            target_data = network.np_to_variable(target_data, is_cuda=True)
+            target_data = target_data.permute(0, 3, 1, 2)
+            target_features = self.features(target_data)
 
- 
-        target_data = network.np_to_variable(target_data, is_cuda=True)
-        target_data = target_data.permute(0, 3, 1, 2)
-        target_features = self.features(target_data)
-        #reshape target from 2xCxHxW to 2Cx1xHxW for cross corr
-        target_features = target_features.view(-1,1,target_features.size()[2], 
-                                               target_features.size()[3])
+        else:
+            img_features = im_data
+            target_features = target_data
+
     
         #get cross correlation of each target's features with image features
         #(same padding)
         padding = (max(0,int(target_features.size()[2]/2)), 
                          max(0,int(target_features.size()[3]/2)))
-        cc = F.conv2d(img_features,target_features,
-                      padding=padding, groups=self.groups)
-
-        cc = self.select_to_match_dimensions(cc,img_features)
 
 
+        ccs = []
+        diffs = []
+        for b_ind in range(img_features.size()[0]):
+            target_inds = network.np_to_variable(np.asarray([b_ind*2, b_ind*2+1]),
+                                                is_cuda=True, dtype=torch.LongTensor)
+            sample_targets1 = torch.index_select(target_features,0,target_inds[0])
+            sample_targets2 = torch.index_select(target_features,0,target_inds[1])
+            img_ind = network.np_to_variable(np.asarray([b_ind]),
+                                                is_cuda=True, dtype=torch.LongTensor)
+            sample_img = torch.index_select(img_features,0,img_ind)
+
+            sample_targets1 = sample_targets1.view(-1,1,sample_targets1.size()[2], 
+                                                   sample_targets1.size()[3])
+            sample_targets2 = sample_targets2.view(-1,1,sample_targets2.size()[2], 
+                                                   sample_targets2.size()[3])
+
+
+            #get diff
+            tf1_pooled = F.max_pool2d(sample_targets1,(sample_targets1.size()[2],
+                                                       sample_targets1.size()[3]))
+            tf2_pooled = F.max_pool2d(sample_targets2,(sample_targets2.size()[2],
+                                                       sample_targets2.size()[3]))
+
+            diff1 = sample_img - tf1_pooled.permute(1,0,2,3).expand_as(sample_img)
+            diff2 = sample_img - tf2_pooled.permute(1,0,2,3).expand_as(sample_img)
+            diffs.append(torch.cat([diff1,diff2],1))
+ 
+            #do cross corr      
+            cc1 = F.conv2d(sample_img,sample_targets1,padding=padding,groups=self.groups) 
+            cc2 = F.conv2d(sample_img,sample_targets2,padding=padding,groups=self.groups) 
+            cc = torch.cat([cc1,cc2],1)
+            cc = self.select_to_match_dimensions(cc,sample_img)
+            ccs.append(cc)
+
+        cc = torch.cat(ccs,0)
+        diffs = torch.cat(diffs,0)    
         
-        rpn_conv1 = self.conv1(cc)
-        #rpn_conv2 = self.conv2(img_features)
+        cc_conv = self.cc_conv1(cc)
+        diff_conv = self.diff_conv1(diffs)
+
+        sim = self.sim_conv1(torch.cat([img_features,diff_conv,cc_conv],1))
+        sim = self.sim_conv2(sim)
+        sim = self.sim_conv3(sim)
 
  
         # rpn score
-        rpn_cls_score = self.score_conv(rpn_conv1)
+        rpn_cls_score = self.score_conv(sim)
         rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
         rpn_cls_prob = F.softmax(rpn_cls_score_reshape)
         rpn_cls_prob_reshape = self.reshape_layer(rpn_cls_prob, len(self.anchor_scales)*3*2)
 
         # rpn boxes
-        #rpn_bbox_pred = self.bbox_conv(rpn_conv1)
-        rpn_bbox_pred = self.bbox_conv(rpn_conv1)
+        rpn_bbox_pred = self.bbox_conv(sim)
 
         # proposal layer
         #cfg_key = 'TRAIN' if self.training else 'TEST'

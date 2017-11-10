@@ -1,16 +1,20 @@
 import os
 import torch
+import torchvision.models as models
 import cv2
 import cPickle
 import numpy as np
 
 from instance_detection.model_defs import network
-from instance_detection.model_defs.tdid import TDID 
-#from instance_detection.model_defs.tdid_many_measures import TDID 
+#from instance_detection.model_defs.tdid import TDID 
+#from instance_detection.model_defs.tdid_depthwise_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_plus_batch import TDID 
+from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_sim_batch import TDID 
 from instance_detection.model_defs.utils.timer import Timer
 from instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
 
-from instance_detection.utils.get_data import get_target_images
+from instance_detection.utils.get_data import get_target_images,match_and_concat_images
 
 
 from instance_detection.model_defs.fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
@@ -29,12 +33,15 @@ cfg_file = '../utils/config.yml'
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
                      'saved_models/')
 trained_model_names=[
-                    'TDID_archA_0_12_16.66950_0.49914',
+                    #'TDID_COMB_archDDs_ROI_0_22_441.80027_0.56976_0.08314',
+                    'TDID_COMB_archDmtSimbn_ROI_0_3_102.05323_0.47174_0.11657',
                     #'TDID_archMM_6_9_8.38768_0.00000',
                     ]
+use_batch_norm =True
+use_torch_vgg=True
 rand_seed = 1024
-max_per_target = 5 
-thresh = 0.05
+max_per_target = 15 
+thresh = 0
 vis = False 
 means = np.array([[[102.9801, 115.9465, 122.7717]]])
 if rand_seed is not None:
@@ -65,13 +72,16 @@ def im_detect(net, target_data,im_data, im_info, target_features_given=False):
     """
 
 
-    cls_prob, bbox_pred, rois = net(target_data, im_data, im_info, target_features_given=target_features_given)
-    scores = cls_prob.data.cpu().numpy()
-    boxes = rois.data.cpu().numpy()[:, 1:5] / im_info[0][2]
+    cls_prob, bbox_pred, rois = net(target_data, im_data)
+    scores = cls_prob.data.cpu().numpy()[0,:,:]
+    zs = np.zeros((scores.size, 1))
+    scores = np.concatenate((zs,scores),1)
+    #boxes = rois.data.cpu().numpy()[:, 1:5] / im_info[0][2]
+    boxes = rois.data.cpu().numpy()[0,:, :] / im_info[0][2]
 
     if cfg.TEST.BBOX_REG:
         # Apply bounding-box regression deltas
-        box_deltas = bbox_pred.data.cpu().numpy()
+        box_deltas = bbox_pred[0].data.cpu().numpy()
         pred_boxes = bbox_transform_inv(boxes, box_deltas)
         pred_boxes = clip_boxes(pred_boxes, im_data.shape[1:])
     else:
@@ -82,7 +92,7 @@ def im_detect(net, target_data,im_data, im_info, target_features_given=False):
 
 
 def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
-             max_per_target=5, thresh=0.05, vis=False,
+             max_per_target=5, thresh=0, vis=False,
              output_dir=None,):
     """Test a Fast R-CNN network on an image database."""
 
@@ -129,6 +139,9 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
                 print 'Empty target data: {}'.format(target_name)
                 continue
 
+            target_data = match_and_concat_images(target_data[0][0,:,:,:], target_data[1][0,:,:,:])
+
+
             _t['im_detect'].tic()
             scores, boxes = im_detect(net, target_data, im_data, im_info)
             detect_time = _t['im_detect'].toc(average=False)
@@ -174,19 +187,35 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
 
 if __name__ == '__main__':
     # load data
-    data_path = '/net/bvisionserver3/playpen/ammirato/Data/HalvedRohitData/'
+    data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
+    #data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedGMUData/'
     #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_single_bb_targets/' 
     #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/sygen_many_bb_similar_targets/'
-    target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few/'
+    #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few/'
+    target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160/'
     output_dir='/net/bvisionserver3/playpen/ammirato/Data/Detections/FasterRCNN_AVD/'
 
+
+    #data_path = '/playpen/ammirato/Data/HalvedRohitData/'
+    #target_path = '/playpen/ammirato/Data/Target_Images/AVD_BB_exact_few/'
+    #output_dir='/playpen/ammirato/Data/Detections/FasterRCNN_AVD/'
+
+
     scene_list=[
-             'Home_003_1',
+             #'Home_003_1',
+             #'Home_001_1',
+             #'Home_001_2',
+             #'Home_005_1',
+             #'Home_005_2',
+
+             'Home_101_1',
+             'Home_102_1',
+
              #'Home_003_2',
              #'test',
              #'Office_001_1'
              ]
-    chosen_ids = [1]#range(28)
+    chosen_ids = [79]#range(28)
 
     #CREATE TRAIN/TEST splits
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
@@ -194,7 +223,24 @@ if __name__ == '__main__':
                                             preload=False,
                                             chosen_ids=chosen_ids, 
                                             by_box=False,
-                                            fraction_of_no_box=0)
+                                            fraction_of_no_box=0,
+                                            bn_normalize=use_torch_vgg)
+
+
+
+    #CREATE TRAIN/TEST splits
+#    dataset = GetDataSet.get_fasterRCNN_GMU(data_path,
+#                                            scene_list,
+#                                            preload=False,
+#                                            chosen_ids=[6],#chosen_ids, 
+#                                            by_box=False,
+#                                            fraction_of_no_box=0,
+#                                            bn_normalize=use_torch_vgg)
+#
+
+
+
+    batch = dataset[0]
 
 
     #create train/test loaders, with CUSTOM COLLATE function
@@ -209,8 +255,12 @@ if __name__ == '__main__':
         name_to_id[id_to_name[cid]] = cid 
 
 
-    target_images = get_target_images(target_path, name_to_id.keys(),
-                                      for_testing=True,means=means)
+    if use_torch_vgg:
+        target_images = get_target_images(target_path, name_to_id.keys(),
+                                          for_testing=True,bn_normalize=True)
+    else:
+        target_images = get_target_images(target_path, name_to_id.keys(),
+                                          for_testing=True,means=means)
 
 
 
@@ -220,6 +270,15 @@ if __name__ == '__main__':
         print model_name
         # load net
         net = TDID()
+        #load a previously trained model
+        if use_batch_norm:
+            vgg16_bn = models.vgg16_bn(pretrained=False)
+            net.features = torch.nn.Sequential(*list(vgg16_bn.features.children())[:-1])
+            net.features.eval()
+        elif use_torch_vgg:
+            vgg16 = models.vgg16(pretrained=False)
+            net.features = torch.nn.Sequential(*list(vgg16.features.children())[:-1])
+
         network.load_net(trained_model_path + model_name+'.h5', net)
         print('load model successfully!')
 
