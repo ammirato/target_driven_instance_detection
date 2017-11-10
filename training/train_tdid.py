@@ -311,7 +311,7 @@ for epoch in range(num_epochs):
         m_aps = []
         for vci in val_chosen_ids:
         #test net on some val data
-            data_path = '/net/bvisionserver3/playpen/ammirato/Data/HalvedRohitData/'
+            data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
             scene_list=[
                      'Home_001_1',
                      'Home_001_2',
@@ -330,7 +330,8 @@ for epoch in range(num_epochs):
                                                     chosen_ids=vci, 
                                                     by_box=False,
                                                     max_difficulty=max_difficulty,
-                                                    fraction_of_no_box=0)
+                                                    fraction_of_no_box=0,
+                                                    instance_fname=map_fname)
 
             #create train/test loaders, with CUSTOM COLLATE function
             valloader = torch.utils.data.DataLoader(valset,

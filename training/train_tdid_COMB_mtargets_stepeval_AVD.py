@@ -408,7 +408,7 @@ for epoch in range(num_epochs):
                 else:
                     target_img = cv2.imread(target_images[target_name][t_type][img_ind])
 
-                if np.random.rand() > .9 and vary_images:
+                if np.random.rand() < .9 and vary_images:
                     target_img = vary_image(target_img)
                 #subtract means, give batch dimension, add to list
                 if use_torch_vgg:
