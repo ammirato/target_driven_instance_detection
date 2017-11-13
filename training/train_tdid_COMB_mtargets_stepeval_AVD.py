@@ -12,9 +12,14 @@ from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid import TDID 
 #from instance_detection.model_defs.tdid_depthwise_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwiseSIM_mtargets_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_img_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_imgSIM_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_sim2_batch import TDID 
-from instance_detection.model_defs.tdid_depthwise_mtargets_simND_batch import TDID 
+from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_simND_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_scales_batch import TDID 
 #from instance_detection.model_defs.tdid_mtargets_split_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_bn_batch import TDID 
@@ -64,7 +69,7 @@ output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
 text_out_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
              '/saved_models_meta/')
 #save_name_base = 'TDID_archMM_10'
-save_name_base = 'TDID_COMB_AVD1_archDmtSimNDbn_ROI_0'
+save_name_base = 'TDID_COMB_AVD2_archDmtsimSepbn_ROI_0'
 
 save_freq = 1500
 
@@ -101,20 +106,20 @@ log_interval = cfg.TRAIN.LOG_IMAGE_ITERS
 # load data
 data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
 train_list=[
-             #'Home_001_1',
-             #'Home_001_2',
+             'Home_001_1',
+             'Home_001_2',
              'Home_002_1',
-             'Home_003_1',
-             'Home_003_2',
+             #'Home_003_1',
+             #'Home_003_2',
              'Home_004_1',
              'Home_004_2',
              'Home_005_1',
              'Home_005_2',
              'Home_006_1',
-             #'Home_008_1',
+             'Home_008_1',
              'Home_014_1',
              'Home_014_2',
-             'Office_001_1',
+             #'Office_001_1',
 #              'Gen_002_1',
 #              'Gen_003_1',
 #              'Gen_003_2',
@@ -146,21 +151,21 @@ train_list=[
 
 
 val_lists = [[
-             'Home_001_1',
-             'Home_001_2',
-             'Home_008_1',
-             #'Home_003_1',
-             #'Home_003_2',
-             #'Office_001_1',
+             #'Home_001_1',
+             #'Home_001_2',
+             #'Home_008_1',
+             'Home_003_1',
+             'Home_003_2',
+             'Office_001_1',
             ],
 
             [
-             'Home_001_1',
-             'Home_001_2',
-             'Home_008_1',
-             #'Home_003_1',
-             #'Home_003_2',
-             #'Office_001_1',
+             #'Home_001_1',
+             #'Home_001_2',
+             #'Home_008_1',
+             'Home_003_1',
+             'Home_003_2',
+             'Office_001_1',
             ]]
 
 #pick which objects to include

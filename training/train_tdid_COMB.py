@@ -85,22 +85,26 @@ log_interval = cfg.TRAIN.LOG_IMAGE_ITERS
 # load data
 data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
 train_list=[
-             'Home_001_1',
-             'Home_001_2',
-             'Home_002_1',
-             'Home_004_1',
-             'Home_004_2',
-             'Home_005_1',
-             'Home_005_2',
-             'Home_006_1',
-             'Home_008_1',
-             'Home_014_1',
-             'Home_014_2',
+#             'Home_001_1',
+#             'Home_001_2',
+#             'Home_002_1',
+#             'Home_004_1',
+#             'Home_004_2',
+#             'Home_005_1',
+#             'Home_005_2',
+#             'Home_006_1',
+#             'Home_008_1',
+#             'Home_014_1',
+#             'Home_014_2',
 #              'Gen_002_1',
 #              'Gen_003_1',
 #              'Gen_003_2',
 #              'Gen_003_3',
 #              'Gen_004_2',
+
+
+
+
             ]
 
 #pick which objects to include

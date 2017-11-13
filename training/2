@@ -12,8 +12,7 @@ from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid import TDID 
 #from instance_detection.model_defs.tdid_depthwise_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_batch import TDID 
-#from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
-from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
+from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_scales_batch import TDID 
 #from instance_detection.model_defs.tdid_mtargets_split_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_bn_batch import TDID 
@@ -63,14 +62,14 @@ output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
 text_out_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
              '/saved_models_meta/')
 #save_name_base = 'TDID_archMM_10'
-save_name_base = 'TDID_COMB_GMU2AVD_archDmtSimSepbn_ROI_0'
+save_name_base = 'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_3'
 
-save_freq = 1000
+save_freq = 1500
 
 use_batch_norm = True 
 use_torch_vgg= True 
 use_pretrained_vgg = True
-batch_size=6
+batch_size=1
 loss_mult = 1
 vary_images = False
 id_map_fname = 'all_instance_id_map.txt'
@@ -197,8 +196,7 @@ means = np.array([[[102.9801, 115.9465, 122.7717]]])
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160_varied/'
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160/'
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_160/'
-#target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
-target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80_square/'
+target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
 #val_target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160/'
 val_target_path = target_path
 target_images = get_target_images(target_path,name_to_id.keys(),

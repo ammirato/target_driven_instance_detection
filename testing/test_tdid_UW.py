@@ -9,11 +9,7 @@ from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid import TDID 
 #from instance_detection.model_defs.tdid_depthwise_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_plus_batch import TDID 
-#from instance_detection.model_defs.tdid_depthwise_mtargets_batch import TDID
-#from instance_detection.model_defs.tdid_depthwise_mtargets_img_batch import TDID
-#from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch import TDID
 from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
-#from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_sim_batch import TDID 
 from instance_detection.model_defs.utils.timer import Timer
 from instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
@@ -39,28 +35,9 @@ trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
 trained_model_names=[
                     #'TDID_COMB_archDDs_ROI_0_22_441.80027_0.56976_0.08314',
                     #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_0_3_1500_77.12995_0.53658_0.55839',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_0_1500_181.45799_0.45616_0.76169',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_2_1500_70.95826_0.50947_0.63993',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_14_1500_34.54421_0.58042_0.54599',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_2_1500_64.44165_0.57261_0.59970',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_11_1500_37.33428_0.56359_0.56121',
-                    #'TDID_COMB_GMU2AVD_archDSimbn_ROI_3_1_9000_16.78097_0.64866_0.60400', 
-                    #'TDID_COMB_GMU2AVD_archDSimbn_ROI_3_1_1500_18.30781_0.66401_0.57436',
-
-                    'TDID_COMB_GEN4GMU_archDmtSimbn_ROI_0_1_1500_85.97821_0.40700_-1.00000',
-
-
-
-
-
-
-                    ########################################################
-                    #####           AVD ABLATION STUDY             #########
-                    ########################################################
-#                    'TDID_COMB_AVD2_archDmtbn_ROI_2_10_1461_50.26356_0.36411_0.40334',
-#                    'TDID_COMB_AVD2_archDmtIMGbn_ROI_0_12_1465_44.27885_0.37181_0.46335',
-#                    'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_15_1460_36.55347_0.60418_0.64426',
-
+                    'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_0_1500_181.45799_0.45616_0.76169',
+                    'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_2_1500_70.95826_0.50947_0.63993',
+                    #'TDID_archMM_6_9_8.38768_0.00000',
                     ]
 use_batch_norm =True
 use_torch_vgg=True
@@ -139,8 +116,6 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
     target_features_dict = {}
     for id_ind,t_id in enumerate(chosen_ids):
         t_name = id_to_name[t_id]
-        if t_name == 'background':
-            continue
         target_data = target_images[t_name]
         target_data = match_and_concat_images(target_data[0][0,:,:,:], target_data[1][0,:,:,:])
         target_data = network.np_to_variable(target_data, is_cuda=True)
@@ -233,8 +208,7 @@ if __name__ == '__main__':
     #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/sygen_many_bb_similar_targets/'
     #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few/'
     #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160/'
-    #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_80/'
-    target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
+    target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_80/'
     output_dir='/net/bvisionserver3/playpen/ammirato/Data/Detections/FasterRCNN_AVD/'
 
 
@@ -244,28 +218,27 @@ if __name__ == '__main__':
 
 
     scene_list=[
-             #'Home_001_1',
-             #'Home_001_2',
-             #'Home_002_1',
+             'Home_001_1',
+             'Home_001_2',
+             'Home_002_1',
              'Home_003_1',
              'Home_003_2',
-             #'Home_004_1',
-             #'Home_004_2',
-             #'Home_005_1',
-             #'Home_005_2',
-             #'Home_006_1',
-             #'Home_008_1',
-             #'Home_014_1',
-             #'Home_014_2',
-             'Office_001_1',
+             'Home_004_1',
+             'Home_004_2',
+             'Home_005_1',
+             'Home_005_2',
+             'Home_006_1',
+             'Home_008_1',
+             'Home_014_1',
+             'Home_014_2',
+             'Office_001_1'
 
-             'Home_102_1',
-             'Home_104_1',
-             'Home_105_1',
+             #'Home_101_1',
+             #'Home_102_1',
 
              #'test',
              ]
-    chosen_ids = [5,10,12,14,21,28, 18,50,79,94,96]#range(28)
+    chosen_ids = [5,10,12,14,21,28]#range(28)
 
     #CREATE TRAIN/TEST splits
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
@@ -274,8 +247,7 @@ if __name__ == '__main__':
                                             chosen_ids=chosen_ids, 
                                             by_box=False,
                                             fraction_of_no_box=1,
-                                            bn_normalize=use_torch_vgg,
-                                            max_difficulty=4)
+                                            bn_normalize=use_torch_vgg)
 
 
 
@@ -298,7 +270,6 @@ if __name__ == '__main__':
     dataloader = torch.utils.data.DataLoader(dataset,
                                               batch_size=1,
                                               shuffle=True,
-                                              # num_workers=2,
                                               collate_fn=AVD.collate)
 
     map_fname = 'all_instance_id_map.txt'
