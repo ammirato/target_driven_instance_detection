@@ -16,9 +16,19 @@ from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid_depthwise_mtargets_img_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_imgSIM_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCORR512_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCORR512_batch_ms import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCORR512nc_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCorrPoolCorr_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffPoolCorr_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffPoolCorr_batch_ms import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch_ms import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCorrPoolCorrSAB_batch import TDID 
+from instance_detection.model_defs.tdid_depthwise_mtargets_diffCorrPoolCorrSAB_batch_ms import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffMS_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_sim2_batch import TDID 
-from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_simND_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_scales_batch import TDID 
 #from instance_detection.model_defs.tdid_mtargets_split_batch import TDID 
@@ -69,14 +79,14 @@ output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
 text_out_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
              '/saved_models_meta/')
 #save_name_base = 'TDID_archMM_10'
-save_name_base = 'TDID_COMB_AVD2_archDmtsimSepbn_ROI_0'
+save_name_base = 'TDID_COMB_AVD2_archDmtDiffCorrPoolCorrSABMSbn_ROI_0'
 
 save_freq = 1500
 
 use_batch_norm = True 
 use_torch_vgg= True 
 use_pretrained_vgg = True
-batch_size=6
+batch_size=5
 loss_mult = 1
 vary_images = False
 id_map_fname = 'all_instance_id_map.txt'
@@ -543,9 +553,9 @@ for epoch in range(num_epochs):
             log_print(log_text, color='green', attrs=['bold'])
             print(targets_cnt)
 
-            log_print('\tcls: %.4f, box: %.4f' % (
-                net.cross_entropy.data.cpu().numpy()[0], net.loss_box.data.cpu().numpy()[0])
-            )
+#            log_print('\tcls: %.4f, box: %.4f' % (
+#                net.cross_entropy.data.cpu().numpy()[0], net.loss_box.data.cpu().numpy()[0])
+#            )
 
         ######################################################
         #epoch over

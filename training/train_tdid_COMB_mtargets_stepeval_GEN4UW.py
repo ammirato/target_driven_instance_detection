@@ -12,10 +12,25 @@ from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid import TDID 
 #from instance_detection.model_defs.tdid_depthwise_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwiseSIM_mtargets_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_img_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_imgSIM_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCORR512_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCORR512_batch_ms import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCORR512nc_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCorrPoolCorr_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffPoolCorr_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffPoolCorr_batch_ms import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch_ms import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCorrPoolCorrSAB_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCorrPoolCorrSAB_batch_ms import TDID 
+from instance_detection.model_defs.TDID_final import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffMS_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_sim2_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
-#from instance_detection.model_defs.tdid_depthwise_mtargets_simMisha_batch import TDID 
-from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch import TDID
+#from instance_detection.model_defs.tdid_depthwise_mtargets_simND_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_scales_batch import TDID 
 #from instance_detection.model_defs.tdid_mtargets_split_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_bn_batch import TDID 
@@ -65,7 +80,7 @@ output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
 text_out_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
              '/saved_models_meta/')
 #save_name_base = 'TDID_archMM_10'
-save_name_base = 'TDID_COMB_GEN4GMU_archDmtDIFFbn_ROI_1'
+save_name_base = 'TDID_final_GEN4UW_0'
 
 save_freq = 1500
 
@@ -74,10 +89,9 @@ use_torch_vgg= True
 use_pretrained_vgg = True
 batch_size=5
 loss_mult = 1
-vary_images = False
+vary_images = True 
 #id_map_fname = 'all_instance_id_map.txt'
 id_map_fname = 'hybrid_instance_id_map.txt'
-#id_map_fname = 'instance_id_map.txt'
 
 
 
@@ -105,37 +119,40 @@ log_interval = cfg.TRAIN.LOG_IMAGE_ITERS
 data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
 train_list=[
              #'Home_001_1',
-#             #'Home_001_2',
+             #'Home_001_2',
              'Home_002_1',
              'Home_003_1',
              'Home_003_2',
              'Home_004_1',
-#             'Home_004_2',
+             'Home_004_2',
              'Home_005_1',
-#             'Home_005_2',
+             'Home_005_2',
              'Home_006_1',
-             'Home_008_1',
+             #'Home_008_1',
              'Home_014_1',
-#             'Home_014_2',
+             'Home_014_2',
              'Office_001_1',
-##              'Gen_002_1',
+#              'Gen_002_1',
               'Gen_003_1',
-         'Gen_004_1',
+              'Gen_004_1',
+              #'Gen_004_3',
+              #'Gen_004_3',
+              'Gen_009_2',
+              'Gen_009_2',
+              'Gen_009_2',
 #              'Gen_003_2',
-##              'Gen_003_3',
+#              'Gen_003_3',
 #              'Gen_004_2',
 #              'Gen_005_2',
-              'Gen_006_2',
-              'Gen_006_2',
-              'Gen_007_2',
-              'Gen_004_3',
-              'Gen_004_3',
-
-#             'Home_101_1',
-#             'Home_102_1',
-#             'Home_103_1',
-#             'Home_104_1',
-#             'Home_105_1',
+              'Gen_009_4',
+             'Home_101_1',
+             'Home_102_1',
+             'Home_103_1',
+             'Home_104_1',
+             'Home_105_1',
+             'Home_106_1',
+             'Home_107_1',
+             'Home_108_1',
             ]
 
 
@@ -161,26 +178,32 @@ train_list=[
 
 
 val_lists = [[
-             'Home_102_1',
-             'Home_104_1',
-             'Home_105_1',
+             'Home_101_1',
+             #'Home_102_1',
+             #'Home_008_1',
+             #'Home_003_1',
+             #'Home_003_2',
+             #'Office_001_1',
             ],
 
             [
              #'Home_001_1',
              #'Home_001_2',
              #'Home_008_1',
+             #'Home_003_1',
+             #'Home_003_2',
+             #'Office_001_1',
             ]]
 
 #pick which objects to include
 #will be further refined by the name_to_id_map loaded later
 #excluded_cids = [53,76,78,79,82,86,16,   1,2,18,21,25]
-excluded_cids = [53,76,78,79,82,86,16,33,32,   50,79,94,96,]#5,10,12,14,18,21,28]
-#excluded_cids = []
-chosen_ids =  [x for x in range(0,2111) if x not in excluded_cids]
+excluded_cids = [53,76,78,79,82,86,16,33,32,]#   18,50,79,94,96] #10, 5,11,12,14]
+#excluded_cids = [8,18]
+chosen_ids =  [x for x in range(0,5000) if x not in excluded_cids]
 #val_chosen_ids = [[4,5,17,19,23],[18,50,79,94,96]] #, [5,10,17]]#chosen_ids #range(0,28)#for validation testing
 #val_chosen_ids = [[18,50,79,94,96,5,10,12,14,21],[5,10,12,14,21]] #, [5,10,17]]#chosen_ids #range(0,28)#for validation testing
-val_chosen_ids = [[50,79,94,96],[5]] #, [5,10,17]]#chosen_ids #range(0,28)#for validation testing
+val_chosen_ids = [[18], []] #, [5,10,17]]#chosen_ids #range(0,28)#for validation testing
 
 max_difficulty = 4 
 
@@ -211,9 +234,8 @@ means = np.array([[[102.9801, 115.9465, 122.7717]]])
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160_varied/'
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160/'
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_160/'
-target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_and_UW_80/'
-val_target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
+target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_and_UW_80/'
 #val_target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160/'
 val_target_path = target_path
 target_images = get_target_images(target_path,name_to_id.keys(),
@@ -259,7 +281,6 @@ trainloader = torch.utils.data.DataLoader(train_set,
 
 
 
-print 'train_set_good'
 
 
 if save_freq > len(train_set)/batch_size:
@@ -288,7 +309,6 @@ meta_fid.write('val chosen_ids: {}\n'.format(val_chosen_ids))
 meta_fid.write('train_list: {}\n'.format(train_list))
 meta_fid.write('val_lists: {}\n'.format(val_lists))
 meta_fid.write('target_path: {}\n'.format(target_path))
-meta_fid.write('val target_path: {}\n'.format(val_target_path))
 if use_VID:
     meta_fid.write('VID_target_size: {}\n'.format(target_size))
     meta_fid.write('vid_set: {}\n'.format('train_single'))
@@ -551,9 +571,9 @@ for epoch in range(num_epochs):
             log_print(log_text, color='green', attrs=['bold'])
             print(targets_cnt)
 
-            log_print('\tcls: %.4f, box: %.4f' % (
-                net.cross_entropy.data.cpu().numpy()[0], net.loss_box.data.cpu().numpy()[0])
-            )
+#            log_print('\tcls: %.4f, box: %.4f' % (
+#                net.cross_entropy.data.cpu().numpy()[0], net.loss_box.data.cpu().numpy()[0])
+#            )
 
         ######################################################
         #epoch over

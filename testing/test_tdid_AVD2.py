@@ -12,7 +12,8 @@ from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid_depthwise_mtargets_batch import TDID
 #from instance_detection.model_defs.tdid_depthwise_mtargets_img_batch import TDID
 #from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch import TDID
-from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch_ms import TDID
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch_ms import TDID
+from instance_detection.model_defs.TDID_final import TDID
 #from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_sim_batch import TDID 
@@ -38,31 +39,14 @@ cfg_file = '../utils/config.yml'
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
                      'saved_models/')
 trained_model_names=[
-                    #'TDID_COMB_archDDs_ROI_0_22_441.80027_0.56976_0.08314',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_0_3_1500_77.12995_0.53658_0.55839',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_0_1500_181.45799_0.45616_0.76169',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_2_1500_70.95826_0.50947_0.63993',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_14_1500_34.54421_0.58042_0.54599',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_2_1500_64.44165_0.57261_0.59970',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_11_1500_37.33428_0.56359_0.56121',
-                    #'TDID_COMB_GMU2AVD_archDSimbn_ROI_3_1_9000_16.78097_0.64866_0.60400', 
-                    #'TDID_COMB_GMU2AVD_archDSimbn_ROI_3_1_1500_18.30781_0.66401_0.57436',
-
-                    #'TDID_COMB_GEN4GMU_archDmtSimbn_ROI_0_1_1500_85.97821_0.40700_-1.00000',
-                   # 'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_20_1500_29.99154_0.50544_0.53494',
-                    # 'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_1_1500_76.57746_0.54786_0.62557',
-                     #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_0_1500_177.71376_0.43828_0.55115',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_16_1460_36.33837_0.62699_0.64558',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_17_1460_35.33062_0.52757_0.58680',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_18_1460_35.71208_0.64653_0.58807',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_9_1460_43.83876_0.56536_0.59204',
                     #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_3_1460_58.62565_0.36481_0.37615',
 
-
-        'tdid_depthwise_mtargets_diff_batch_ms_GMU2AVD_3_1500_96.82630_0.63621_0.66758',
-        'tdid_depthwise_mtargets_diff_batch_ms_GMU2AVD_5_1500_85.89409_0.61002_0.67649',
-        'tdid_depthwise_mtargets_diff_batch_ms_GMU2AVD_2_1500_106.58607_0.62538_0.66251',
-
+#                    'TDID_final_AVD2_0_3_1500_73.77807_0.52620_-1.00000',
+#'TDID_final_GEN4GMU_0_0_6000_131.28783_0.41657_-1.00000',
+#'TDID_final_GEN4UW_0_0_6000_155.30497_0.96445_-1.00000',
+#'TDID_final_AVD2_0_6_1500_62.88897_0.60902_-1.00000',
+#'TDID_final_AVD2_0_9_1500_57.71408_0.59364_-1.00000',
+'TDID_final_AVD2_0_12_1500_56.05072_0.65480_-1.00000',
 
 
                     ########################################################
@@ -205,7 +189,8 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
             fg_boxes = boxes[inds, 1 * 4:(1 + 1) * 4]
             fg_dets = np.hstack((fg_boxes, fg_scores[:, np.newaxis])) \
                 .astype(np.float32, copy=False)
-            keep = nms(fg_dets, cfg.TEST.NMS)
+            #keep = nms(fg_dets, cfg.TEST.NMS)
+            keep = nms(fg_dets, .01)
             fg_dets = fg_dets[keep, :]
 
             # Limit to max_per_target detections *over all classes*
@@ -255,19 +240,19 @@ if __name__ == '__main__':
 
 
     scene_list=[
-             'Home_001_1',
-             'Home_001_2',
-             'Home_002_1',
+             #'Home_001_1',
+             #'Home_001_2',
+             #'Home_002_1',
              'Home_003_1',
              'Home_003_2',
-             'Home_004_1',
-             'Home_004_2',
-             'Home_005_1',
-             'Home_005_2',
-             'Home_006_1',
-             'Home_008_1',
-             'Home_014_1',
-             'Home_014_2',
+             #'Home_004_1',
+             #'Home_004_2',
+             #'Home_005_1',
+             #'Home_005_2',
+             #'Home_006_1',
+             #'Home_008_1',
+             #'Home_014_1',
+             #'Home_014_2',
              'Office_001_1',
 
              #'Home_102_1',
@@ -276,7 +261,10 @@ if __name__ == '__main__':
 
              #'test',
              ]
-    chosen_ids = [5,10,12,14,21,28]# 18,50,79,94,96]#range(28)
+    excluded_ids = [8,18]
+    chosen_ids = range(32) #[5,10,12,14,21,28]# 18,50,79,94,96]#range(28)
+    chosen_ids = [cid for cid in chosen_ids if cid not in excluded_ids]
+    print chosen_ids
 
     #CREATE TRAIN/TEST splits
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
@@ -350,7 +338,7 @@ if __name__ == '__main__':
         net.eval()
 
         # evaluation
-        test_net(model_name, net, dataloader, name_to_id, target_images,chosen_ids, 
+        test_net(model_name+'01nms', net, dataloader, name_to_id, target_images,chosen_ids, 
                  max_per_target=max_per_target, thresh=thresh, vis=vis,
                  output_dir=output_dir)
 

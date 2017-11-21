@@ -12,7 +12,8 @@ from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid_depthwise_mtargets_batch import TDID
 #from instance_detection.model_defs.tdid_depthwise_mtargets_img_batch import TDID
 #from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch import TDID
-from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch_ms import TDID
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diff_batch_ms import TDID
+from instance_detection.model_defs.TDID_final import TDID
 #from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_sim_batch import TDID 
@@ -38,30 +39,17 @@ cfg_file = '../utils/config.yml'
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
                      'saved_models/')
 trained_model_names=[
-                    #'TDID_COMB_archDDs_ROI_0_22_441.80027_0.56976_0.08314',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_0_3_1500_77.12995_0.53658_0.55839',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_0_1500_181.45799_0.45616_0.76169',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_2_1500_70.95826_0.50947_0.63993',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_14_1500_34.54421_0.58042_0.54599',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_2_1500_64.44165_0.57261_0.59970',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_11_1500_37.33428_0.56359_0.56121',
-                    #'TDID_COMB_GMU2AVD_archDSimbn_ROI_3_1_9000_16.78097_0.64866_0.60400', 
-                    #'TDID_COMB_GMU2AVD_archDSimbn_ROI_3_1_1500_18.30781_0.66401_0.57436',
 
-                    #'TDID_COMB_GEN4GMU_archDmtSimbn_ROI_0_1_1500_85.97821_0.40700_-1.00000',
-                   # 'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_20_1500_29.99154_0.50544_0.53494',
-                    # 'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_1_1500_76.57746_0.54786_0.62557',
-                     #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_0_1500_177.71376_0.43828_0.55115',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_16_1460_36.33837_0.62699_0.64558',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_17_1460_35.33062_0.52757_0.58680',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_18_1460_35.71208_0.64653_0.58807',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_9_1460_43.83876_0.56536_0.59204',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_3_1460_58.62565_0.36481_0.37615',
-
-
-        'tdid_depthwise_mtargets_diff_batch_ms_GMU2AVD_3_1500_96.82630_0.63621_0.66758',
-        'tdid_depthwise_mtargets_diff_batch_ms_GMU2AVD_5_1500_85.89409_0.61002_0.67649',
-        'tdid_depthwise_mtargets_diff_batch_ms_GMU2AVD_2_1500_106.58607_0.62538_0.66251',
+#            'TDID_final_GMU2AVD_0_0_3269_167.90337_0.65390_-1.00000',
+#            'TDID_final_GMU2AVD_0_1_3269_108.50385_0.66262_-1.00000',
+#            'TDID_final_GMU2AVD_1_1_3264_123.72271_0.69656_-1.00000',
+            'TDID_final_GMU2AVD_0_2_3269_90.75473_0.75898_-1.00000',
+#            'TDID_final_GMU2AVD_0_5_3269_71.92844_0.72679_-1.00000',
+#            'TDID_final_GMU2AVD_1_2_3264_104.75258_0.73188_-1.00000',
+#        'TDID_final_GMU2AVD_0_6_3269_69.46252_0.66862_-1.00000',
+#        'TDID_final_GMU2AVD_0_7_3269_65.48879_0.68319_-1.00000',
+#        'TDID_final_GMU2AVD_2_2_1500_1160.56277_0.67041_-1.00000',
+#    'TDID_final_GMU2AVD_2_3_3000_1218.73749_0.68036_-1.00000',
 
 
 
@@ -205,7 +193,8 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
             fg_boxes = boxes[inds, 1 * 4:(1 + 1) * 4]
             fg_dets = np.hstack((fg_boxes, fg_scores[:, np.newaxis])) \
                 .astype(np.float32, copy=False)
-            keep = nms(fg_dets, cfg.TEST.NMS)
+            #keep = nms(fg_dets, cfg.TEST.NMS)
+            keep = nms(fg_dets, .7)
             fg_dets = fg_dets[keep, :]
 
             # Limit to max_per_target detections *over all classes*
@@ -309,7 +298,7 @@ if __name__ == '__main__':
     dataloader = torch.utils.data.DataLoader(dataset,
                                               batch_size=1,
                                               shuffle=True,
-                                              num_workers=2,
+                                              num_workers=4,
                                               collate_fn=AVD.collate)
 
     map_fname = 'all_instance_id_map.txt'
@@ -350,7 +339,7 @@ if __name__ == '__main__':
         net.eval()
 
         # evaluation
-        test_net(model_name, net, dataloader, name_to_id, target_images,chosen_ids, 
+        test_net(model_name + '7nms', net, dataloader, name_to_id, target_images,chosen_ids, 
                  max_per_target=max_per_target, thresh=thresh, vis=vis,
                  output_dir=output_dir)
 

@@ -12,8 +12,12 @@ from instance_detection.model_defs import network
 #from instance_detection.model_defs.tdid import TDID 
 #from instance_detection.model_defs.tdid_depthwise_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffPoolCorr_batch_ms import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_diffCorrPoolCorrSAB_batch_ms import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
-from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_sim_batch import TDID 
+from instance_detection.model_defs.TDID_final import TDID 
+#from instance_detection.model_defs.tdid_depthwise_mtargets_simSep_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_scales_batch import TDID 
 #from instance_detection.model_defs.tdid_mtargets_split_batch import TDID 
 #from instance_detection.model_defs.tdid_depthwise_mtargets_bn_batch import TDID 
@@ -63,15 +67,15 @@ output_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
 text_out_dir = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
              '/saved_models_meta/')
 #save_name_base = 'TDID_archMM_10'
-save_name_base = 'TDID_COMB_GMU2AVD_archDmtSimSepbn_ROI_0'
+save_name_base = 'TDID_final_GMU2AVD_2'
 
-save_freq = 1000
+save_freq = 1500
 
 use_batch_norm = True 
 use_torch_vgg= True 
 use_pretrained_vgg = True
-batch_size=6
-loss_mult = 1
+batch_size=5
+loss_mult = 10
 vary_images = False
 id_map_fname = 'all_instance_id_map.txt'
 
@@ -79,8 +83,8 @@ id_map_fname = 'all_instance_id_map.txt'
 
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' +
                      '/saved_models/')
-trained_model_name = 'TDID_COMB_archDmtSim_ROI_1_0_223.66245_0.22533_0.12992.h5'
-load_trained_model = False 
+trained_model_name = 'TDID_final_GMU2AVD_0_2_3269_90.75473_0.75898_-1.00000.h5'
+load_trained_model = True 
 trained_epoch = 0 
 
 preload_target_images =  False
@@ -91,7 +95,7 @@ num_epochs = 50
 
 # load config
 cfg_from_file(cfg_file)
-lr = cfg.TRAIN.LEARNING_RATE 
+lr = cfg.TRAIN.LEARNING_RATE  *.1
 momentum = cfg.TRAIN.MOMENTUM
 weight_decay = cfg.TRAIN.WEIGHT_DECAY
 disp_interval =10# cfg.TRAIN.DISPLAY
@@ -141,19 +145,23 @@ train_list=[
 #              'Gen_003_3',
 #              'Gen_004_2',
 #              'Gen_005_2',
-              'Gen_008_4',
+#              'Gen_008_4',
+              'Gen_009_4',
+              'Gen_009_4',
             ]
 
 
 val_lists = [[
-             'Home_001_1',
-             'Home_001_2',
-             'Home_008_1',
+#             'Home_001_1',
+#             'Home_001_2',
+             #'Home_008_1',
+             'Home_003_1',
+#             'Home_003_2',
             ],
             [
-             'Home_014_1',
-             'Home_014_2',
-             'Home_002_1',
+             #'Home_014_1',
+             #'Home_014_2',
+             #'Home_002_1',
             ]]
             
 
@@ -197,8 +205,9 @@ means = np.array([[[102.9801, 115.9465, 122.7717]]])
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160_varied/'
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160/'
 #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_160/'
-#target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
-target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80_square/'
+target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
+#target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80_square/'
+#target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80_square/'
 #val_target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160/'
 val_target_path = target_path
 target_images = get_target_images(target_path,name_to_id.keys(),
@@ -384,7 +393,7 @@ for epoch in range(num_epochs):
 
             #pick a random target, with a bias towards choosing a target that 
             #is in the image. Also pick just that object's gt_box
-            if (np.random.rand() < .6 or not_present.shape[0]==0) and objects_present.shape[0]!=0:
+            if (np.random.rand() < .8 or not_present.shape[0]==0) and objects_present.shape[0]!=0:
                 target_ind = int(np.random.choice(objects_present))
                 gt_boxes = gt_boxes[np.where(gt_boxes[:,4]==target_ind)[0],:-1] 
                 gt_boxes[0,4] = 1
@@ -540,9 +549,9 @@ for epoch in range(num_epochs):
             log_print(log_text, color='green', attrs=['bold'])
             print(targets_cnt)
 
-            log_print('\tcls: %.4f, box: %.4f' % (
-                net.cross_entropy.data.cpu().numpy()[0], net.loss_box.data.cpu().numpy()[0])
-            )
+#            log_print('\tcls: %.4f, box: %.4f' % (
+#                net.cross_entropy.data.cpu().numpy()[0], net.loss_box.data.cpu().numpy()[0])
+#            )
 
         ######################################################
         #epoch over
