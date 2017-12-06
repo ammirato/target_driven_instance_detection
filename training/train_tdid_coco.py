@@ -43,7 +43,6 @@ def log_print(text, color=None, on_color=None, attrs=None):
         print(text)
 
 
-
 # hyper-parameters
 # ------------
 cfg_file = '../utils/config.yml'
