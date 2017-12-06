@@ -206,7 +206,7 @@ class TDID(nn.Module):
         cc1 = torch.mean(cc1.squeeze(0),0).data.cpu().numpy()
         diff1 = torch.mean(diff1.squeeze(0),0).data.cpu().numpy()
         rpn_conv1 = torch.mean(rpn_conv1.squeeze(0),0).data.cpu().numpy()
-        return all_scores, output_bbox_pred, all_rois, [img_features,cc1,diff1,rpn_conv1]
+        return all_scores, output_bbox_pred, all_rois #, [img_features,cc1,diff1,rpn_conv1]
 
 
 

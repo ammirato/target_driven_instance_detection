@@ -1,8 +1,7 @@
-import matplotlib.pyplot as plt
-from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
+from instance_detection.evaluation.COCO_eval.pycocotools.coco import COCO
+from instance_detection.evaluation.COCO_eval.pycocotools.cocoeval import COCOeval
 import numpy as np
-import skimage.io as io
+#import skimage.io as io
 #import pylab
 #pylab.rcParams['figure.figsize'] = (10.0, 8.0)
 
@@ -38,7 +37,7 @@ def coco_det_eval(gt_path, det_path,
     cocoEval.params.iouThrs = np.array([iouThrs])
     cocoEval.params.maxDets = maxDets 
     cocoEval.params.catIds = catIds 
-    cocoEval.params.areaRng = [[0, 10000000000.0], [1250, 10000000000.0 ], [0, 416], [416, 1250], [1250, 3750], [3750, 7500], [7500,10000000000.0]]
+    cocoEval.params.areaRng = [[0, 10000000000.0], [416, 10000000000.0 ], [0, 416], [416, 1250], [1250, 3750], [3750, 7500], [7500,10000000000.0]]
     cocoEval.params.areaRngLbl = ['all', 'valid', 'l0', 'l1', 'l2', 'l3', 'l4']
     cocoEval.params.useSegs = [0]
 
@@ -47,4 +46,4 @@ def coco_det_eval(gt_path, det_path,
     cocoEval.accumulate()
     cocoEval.summarize()
 
-
+    return cocoEval.stats[2]

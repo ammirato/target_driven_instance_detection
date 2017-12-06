@@ -38,41 +38,10 @@ cfg_file = '../utils/config.yml'
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
                      'saved_models/')
 trained_model_names=[
-                    #'TDID_COMB_archDDs_ROI_0_22_441.80027_0.56976_0.08314',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_0_3_1500_77.12995_0.53658_0.55839',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_0_1500_181.45799_0.45616_0.76169',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_1_2_1500_70.95826_0.50947_0.63993',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_14_1500_34.54421_0.58042_0.54599',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_2_1500_64.44165_0.57261_0.59970',
-                    #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_11_1500_37.33428_0.56359_0.56121',
-                    #'TDID_COMB_GMU2AVD_archDSimbn_ROI_3_1_9000_16.78097_0.64866_0.60400', 
-                    #'TDID_COMB_GMU2AVD_archDSimbn_ROI_3_1_1500_18.30781_0.66401_0.57436',
-
-                    #'TDID_COMB_GEN4GMU_archDmtSimbn_ROI_0_1_1500_85.97821_0.40700_-1.00000',
-                   # 'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_20_1500_29.99154_0.50544_0.53494',
-                    # 'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_1_1500_76.57746_0.54786_0.62557',
-                     #'TDID_COMB_GMU2AVD_archDmtSimbn_ROI_2_0_1500_177.71376_0.43828_0.55115',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_16_1460_36.33837_0.62699_0.64558',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_17_1460_35.33062_0.52757_0.58680',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_18_1460_35.71208_0.64653_0.58807',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_9_1460_43.83876_0.56536_0.59204',
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_3_1460_58.62565_0.36481_0.37615',
-
-
-        'tdid_depthwise_mtargets_diff_batch_ms_GMU2AVD_3_1500_96.82630_0.63621_0.66758',
-        'tdid_depthwise_mtargets_diff_batch_ms_GMU2AVD_5_1500_85.89409_0.61002_0.67649',
-        'tdid_depthwise_mtargets_diff_batch_ms_GMU2AVD_2_1500_106.58607_0.62538_0.66251',
-
-
-
-                    ########################################################
-                    #####           AVD ABLATION STUDY             #########
-                    ########################################################
-#                    'TDID_COMB_AVD2_archDmtbn_ROI_2_10_1461_50.26356_0.36411_0.40334',
-#                    'TDID_COMB_AVD2_archDmtIMGbn_ROI_0_12_1465_44.27885_0.37181_0.46335',
-#                    'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_15_1460_36.55347_0.60418_0.64426',
-
+                 'TDID_final_AVD2_0_12_1500_56.05072_0.65480_-1.00000',
                     ]
+
+
 use_batch_norm =True
 use_torch_vgg=True
 rand_seed =None 

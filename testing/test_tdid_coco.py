@@ -39,24 +39,10 @@ cfg_file = '../utils/config.yml'
 trained_model_path = ('/net/bvisionserver3/playpen/ammirato/Data/Detections/' + 
                      'saved_models/')
 trained_model_names=[
-                    #'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_3_1460_58.62565_0.36481_0.37615',
-
-#                    'TDID_final_AVD2_0_3_1500_73.77807_0.52620_-1.00000',
-#'TDID_final_GEN4GMU_0_0_6000_131.28783_0.41657_-1.00000',
-#'TDID_final_GEN4UW_0_0_6000_155.30497_0.96445_-1.00000',
-#'TDID_final_AVD2_0_6_1500_62.88897_0.60902_-1.00000',
-#'TDID_final_AVD2_0_9_1500_57.71408_0.59364_-1.00000',
-'TDID_final_AVD2_0_12_1500_56.05072_0.65480_-1.00000',
-
-
-                    ########################################################
-                    #####           AVD ABLATION STUDY             #########
-                    ########################################################
-#                    'TDID_COMB_AVD2_archDmtbn_ROI_2_10_1461_50.26356_0.36411_0.40334',
-#                    'TDID_COMB_AVD2_archDmtIMGbn_ROI_0_12_1465_44.27885_0.37181_0.46335',
-#                    'TDID_COMB_AVD2_archDmtDIFFbn_ROI_0_15_1460_36.55347_0.60418_0.64426',
-
+                 'TDID_final_GMU2AVD_coco_0_3_3000_1063.94031_0.64303_-1.00000',
                     ]
+
+
 use_batch_norm =True
 use_torch_vgg=True
 rand_seed =None 
@@ -106,22 +92,17 @@ def im_detect(net, target_data,im_data, im_info, features_given=True):
 def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
              max_per_target=5, thresh=0, vis=False,
              output_dir=None,):
-    """Test a Fast R-CNN network on an image database."""
-
+    """Test a TDID network on an image dataset."""
+    #list to output for coco evaluation
+    results = []
+ 
     #get map from target id to name
     id_to_name = {}
     for name in name_to_id.keys():
         id_to_name[name_to_id[name]] =name 
     #num images in test set
     num_images = len(dataloader)
-    # all detections are collected into:
-    #    all_boxes[cls][image] = N x 5 array of detections in
-    #    (x1, y1, x2, y2, score)
-    all_boxes = [[[] for _ in xrange(num_images)]
-                 for _ in xrange(dataloader.dataset.get_num_classes())]
-    #array of result dicts
-    all_results = {} 
-    
+   
     # timers
     _t = {'im_detect': Timer(), 'misc': Timer()}
     
@@ -150,19 +131,20 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
         im_data=batch[0].unsqueeze(0).numpy()
         im_data=np.transpose(im_data,(0,2,3,1))
         im_info = im_data.shape[1:]
-        #im_info = np.zeros((1,3))
-        #im_info[0,:] = [im_data.shape[1],im_data.shape[2],1]
         dontcare_areas = np.zeros((0,4))       
+
+        #get image name and index
+        img_name = batch[1][1]
+        img_ind = int(img_name[:-4])
 
 
         #get image features
-
         im_data = network.np_to_variable(im_data, is_cuda=True)
         im_data = im_data.permute(0, 3, 1, 2)
         img_features = net.features(im_data)
 
 
-        all_image_dets = np.zeros((0,6)) 
+        #all_image_dets = np.zeros((0,6)) 
         for id_ind,t_id in enumerate(chosen_ids):
             target_name = id_to_name[t_id]
             if target_name == 'background':
@@ -173,9 +155,6 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
             if (target_data is None) or len(target_data) < 1:
                 print 'Empty target data: {}'.format(target_name)
                 continue
-
-            #target_data = match_and_concat_images(target_data[0][0,:,:,:], target_data[1][0,:,:,:])
-
 
             _t['im_detect'].tic()
             scores, boxes = im_detect(net, target_features, img_features, im_info)
@@ -189,8 +168,7 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
             fg_boxes = boxes[inds, 1 * 4:(1 + 1) * 4]
             fg_dets = np.hstack((fg_boxes, fg_scores[:, np.newaxis])) \
                 .astype(np.float32, copy=False)
-            #keep = nms(fg_dets, cfg.TEST.NMS)
-            keep = nms(fg_dets, .01)
+            keep = nms(fg_dets, cfg.TEST.NMS)
             fg_dets = fg_dets[keep, :]
 
             # Limit to max_per_target detections *over all classes*
@@ -207,14 +185,25 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
 
             #put class id in the box
             fg_dets = np.insert(fg_dets,4,t_id,axis=1)
-            all_image_dets = np.vstack((all_image_dets,fg_dets))
+            #all_image_dets = np.vstack((all_image_dets,fg_dets))
+
+            for box in fg_dets:
+                cid = int(box[4])
+                xmin = int(box[0])
+                ymin = int(box[1])
+                width = int(box[2]-box[0] + 1)
+                height = int(box[3]-box[1] + 1)
+                score = float(box[5])
+                results.append({'image_id':img_ind, 'category_id':cid, 'bbox':[xmin,ymin,width,height    ], 'score':score})
+
+
 
         #record results by image name
-        all_results[batch[1][1]] = all_image_dets.tolist()
+        #all_results[batch[1][1]] = all_image_dets.tolist()
     if output_dir is not None:
         with open(det_file, 'w') as f:
-            json.dump(all_results,f)
-    return all_results
+            json.dump(results,f)
+    return results
 
 
 
@@ -224,35 +213,25 @@ def test_net(model_name, net, dataloader, name_to_id, target_images, chosen_ids,
 if __name__ == '__main__':
     # load data
     data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
-    #data_path = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedGMUData/'
-    #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_single_bb_targets/' 
-    #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/sygen_many_bb_similar_targets/'
-    #target_path = '/net/bvisionserver3/playpen/ammirato/Data/instance_detection_targets/AVD_BB_exact_few/'
-    #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_160/'
-    #target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_80/'
     target_path = '/net/bvisionserver3/playpen10/ammirato/Data/instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
     output_dir='/net/bvisionserver3/playpen/ammirato/Data/Detections/FasterRCNN_AVD/'
 
 
-    #data_path = '/playpen/ammirato/Data/HalvedRohitData/'
-    #target_path = '/playpen/ammirato/Data/Target_Images/AVD_BB_exact_few/'
-    #output_dir='/playpen/ammirato/Data/Detections/FasterRCNN_AVD/'
-
 
     scene_list=[
-             #'Home_001_1',
-             #'Home_001_2',
-             #'Home_002_1',
+             'Home_001_1',
+             'Home_001_2',
+             'Home_002_1',
              'Home_003_1',
              'Home_003_2',
-             #'Home_004_1',
-             #'Home_004_2',
-             #'Home_005_1',
-             #'Home_005_2',
-             #'Home_006_1',
-             #'Home_008_1',
-             #'Home_014_1',
-             #'Home_014_2',
+             'Home_004_1',
+             'Home_004_2',
+             'Home_005_1',
+             'Home_005_2',
+             'Home_006_1',
+             'Home_008_1',
+             'Home_014_1',
+             'Home_014_2',
              'Office_001_1',
 
              #'Home_102_1',
@@ -261,10 +240,7 @@ if __name__ == '__main__':
 
              #'test',
              ]
-    excluded_ids = [8,18]
-    chosen_ids = [5]# range(32) #[5,10,12,14,21,28]# 18,50,79,94,96]#range(28)
-    chosen_ids = [cid for cid in chosen_ids if cid not in excluded_ids]
-    print chosen_ids
+    chosen_ids = [5,10,12,14,21,28]# 18,50,79,94,96]#range(28)
 
     #CREATE TRAIN/TEST splits
     dataset = GetDataSet.get_fasterRCNN_AVD(data_path,
@@ -272,7 +248,7 @@ if __name__ == '__main__':
                                             preload=False,
                                             chosen_ids=chosen_ids, 
                                             by_box=False,
-                                            fraction_of_no_box=0,
+                                            fraction_of_no_box=1,
                                             bn_normalize=use_torch_vgg,
                                             max_difficulty=4)
 
@@ -297,7 +273,7 @@ if __name__ == '__main__':
     dataloader = torch.utils.data.DataLoader(dataset,
                                               batch_size=1,
                                               shuffle=True,
-                                              num_workers=2,
+                                              num_workers=4,
                                               collate_fn=AVD.collate)
 
     map_fname = 'all_instance_id_map.txt'
@@ -338,7 +314,7 @@ if __name__ == '__main__':
         net.eval()
 
         # evaluation
-        test_net(model_name+'01nms', net, dataloader, name_to_id, target_images,chosen_ids, 
+        test_net(model_name, net, dataloader, name_to_id, target_images,chosen_ids, 
                  max_per_target=max_per_target, thresh=thresh, vis=vis,
                  output_dir=output_dir)
 
