@@ -8,6 +8,7 @@ import numpy as np
 from datetime import datetime
 import cv2
 
+
 from instance_detection.model_defs import network
 from instance_detection.model_defs.TDID_final import TDID 
 from instance_detection.model_defs.utils.timer import Timer

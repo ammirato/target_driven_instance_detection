@@ -3,6 +3,9 @@ import cv2
 import numpy as np
 import math
 
+import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD
+import active_vision_dataset_processing.data_loading.transforms as AVD_transforms
+
 
 
 def create_illumination_pattern(rows, cols, xCenter,yCenter,minI=.1,maxI=1,radius=None):
@@ -32,17 +35,31 @@ for il in range(100):
 
 
 def get_target_images(target_path, target_names,preload_images=False, for_testing=False,
-                      means=None, bn_normalize=False):
+                      means=None, pytorch_normalize=False):
+    """
+    returns dict with path to each target image, or loaded image
+
+    Ex) get_target_images('target_path', ['possible','target','names'])
+
+    ARGS:
+        target_path -path that holds directories of all targets.
+                     i.e. target_path/target_0/* has one type 
+                     of target image for each object.
+                     target_path/target_1/* has another type 
+                     of target image for each object.
+                     Each type can have multiple images, 
+                     i.e. target_0/* can have multiple images per object
+        target_names - 
+
+    KWARGS:
+        preload_images - 
+        for_testing  -  loads 1 image per object per type
+        pytorch_normalize -  
+    """
 
 
-
-    #path that holds dirs of all targets
-    #i.e. target_path/target_0/* has one type of target image for each object
-    #     target_path/target_1/* has another type of target image
     #type of target image can mean different things, 
     #probably different type is different view
-    #each type can have multiple images, 
-    #i.e. target_0/* can have multiple images per object
     target_dirs = os.listdir(target_path)
     target_dirs.sort()
     target_images = {}
@@ -84,7 +101,7 @@ def get_target_images(target_path, target_names,preload_images=False, for_testin
                     img = cv2.imread(cur_images[t_type][0])
                 if means is not None:
                     img = img-means
-                if bn_normalize:
+                if pytorch_normalize:
                     img = img / 255.0
                     img = (img-[0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
 
@@ -183,8 +200,98 @@ def vary_image(img, crop_max=5, rotate_max=30,blur_max=9, do_illum=True):
 
 
 
+def check_object_ids(chosen_ids,id_to_name,target_images):
+    """
+    Picks only chosen ids that have a target object and target image.
+
+    ex) check_object_ids(chosen_ids,id_to_name,target_images)
+        Returns only ids in chosen ids that exist in id_to_name dict, and 
+        returns -1 if any id does not have a target image 
+    """
+
+    
+    ids_with_name = list(set(set(chosen_ids) & set(id_to_name.keys())))
+    for cid in ids_with_name:
+        if cid == 0:#skip background
+            continue
+    
+        if ((len(target_images[id_to_name[cid]]) < 1) or  
+                (len(target_images[id_to_name[cid]][0])) < 1): 
+            print('Missing target images for {}!'.format(id_to_name[cid]))
+            return -1
+    return ids_with_name
 
 
+
+
+def normalize_image(image,cfg):
+    """
+    Noramlizes image according to config parameters
+    
+    ex) normalize_image(image,config)
+    """
+    if cfg.PYTORCH_FEATURE_NET:
+        return ((image/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
+    else:
+        print('only pytorch feature nets supported at this time!')
+        return -1
+
+
+
+
+
+def get_class_id_to_name_dict(root,file_name='instance_id_map.txt'):
+    """
+    Returns a dict from integer class id to string name
+    """
+    map_file = open(os.path.join(root,file_name),'r')
+    id_to_name_dict = {}
+    for line in map_file:
+        line = str.split(line)
+        id_to_name_dict[int(line[1])] = line[0]
+    return id_to_name_dict
+
+
+
+def get_AVD_dataset(root, scene_list, chosen_ids,
+                       max_difficulty=4,
+                       fraction_of_no_box=.1,
+                       instance_fname=None,
+                      ):
+    """
+    Returns a dataloader for the AVD dataset.
+
+    dataset = get_AVD_dataset('/path/to/data', ['scene1','scene2,...], [chosen_ids])
+
+
+    ARGS:
+        root: path to data. Parent of all scene directories
+        scene_list: scenes to include
+        chosen_ids: list of object ids to keep labels for
+                    (other labels discarded) 
+    KEYWORD ARGS:
+        max_difficulty(int=4): max bbox difficulty to use 
+    """
+    ##initialize transforms for the labels
+    #only consider boxes from the chosen classes
+    pick_trans = AVD_transforms.PickInstances(chosen_ids,
+                                              max_difficulty=max_difficulty)
+    #compose the transforms in a specific order, first to last
+    target_trans = AVD_transforms.Compose([
+                                           pick_trans,
+                                          ])
+    if instance_fname is None:
+        id_to_name_dict = get_class_id_to_name_dict(root)
+    else:
+        id_to_name_dict = get_class_id_to_name_dict(root,instance_fname)
+
+    dataset = AVD.AVD(root=root,
+                         scene_list=scene_list,
+                         target_transform=target_trans,
+                         classification=False,
+                         class_id_to_name=id_to_name_dict,
+                         fraction_of_no_box=fraction_of_no_box)
+    return dataset
 
 
 

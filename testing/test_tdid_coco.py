@@ -20,7 +20,7 @@ from instance_detection.model_defs.TDID_final import TDID
 from instance_detection.model_defs.utils.timer import Timer
 from instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
 
-from instance_detection.utils.get_data import get_target_images,match_and_concat_images
+from instance_detection.utils.utils import get_target_images,match_and_concat_images
 
 
 from instance_detection.model_defs.fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes

@@ -4,13 +4,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-import time
 
 from utils.timer import Timer
 #from rpn_msr.tdid_proposal_layer import proposal_layer as proposal_layer_py
 #from rpn_msr.tdid_proposal_layer_batch import proposal_layer as proposal_layer_py
-from rpn_msr.tdid_proposal_layer_batch_TODO import proposal_layer as proposal_layer_py
-from rpn_msr.anchor_target_layer_batch_TODO import anchor_target_layer as anchor_target_layer_py
+from rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
+from rpn_msr.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
 
 import network
 from network import Conv2d, FC
@@ -20,66 +19,39 @@ from vgg16 import VGG16
 
 
 class TDID(nn.Module):
-    _feat_stride = [[16, ], [8,]]
+    _feat_stride = [16, ]
     #anchor_scales = [8, 16, 32]
-    anchor_scales = [[2, 4, 8], [1,2,4] ]
+    anchor_scales = [2, 4, 8]
     groups=512
+    cfg = None
 
-    def __init__(self):
+    def __init__(self, cfg):
         super(TDID, self).__init__()
+        self.cfg = cfg
 
         #first 5 conv layers of VGG? only resizing is 4 max pools
         self.features = VGG16(bn=False)
 
-        self.conv1 = Conv2d(3*512,512, 3, relu=True, same_padding=True)
+        self.conv1 = Conv2d(2*self.groups+512,512, 3, relu=False, same_padding=True)
         self.cc_conv = Conv2d(2*self.groups,512, 3, relu=True, same_padding=True)
         self.diff_conv = Conv2d(2*self.groups,512, 3, relu=True, same_padding=True)
-        #self.conv2 = Conv2d(512,512, 3, relu=False, same_padding=True)
-        self.score_conv = Conv2d(512, len(self.anchor_scales[0]) * 3 * 2, 1, relu=False, same_padding=False)
-        self.bbox_conv = Conv2d(512, len(self.anchor_scales[0]) * 3 * 4, 1, relu=False, same_padding=False)
+        self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
+        self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
         # loss
-        self.cross_entropy = [None]*2
-        self.loss_box = [None]*2
-        self.roi_cross_entropy = [None]*2
+        self.cross_entropy = None
+        self.loss_box = None
 
     @property
     def loss(self):
         #return self.roi_cross_entropy
-        return (self.roi_cross_entropy[0] + self.cross_entropy[0] +
-                self.loss_box[0] * 10 + 
-                (self.roi_cross_entropy[1] + self.cross_entropy[1] +
-                self.loss_box[1] * 10 )/4)
+        return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
         #return self.cross_entropy + self.loss_box * 10
-
-    def get_cross_entropy(self):
-        loss = 0 
-        for i in range(2):
-            loss += self.cross_entropy[i].data.cpu().numpy()[0]
-        return loss
-
-    def get_loss_box(self):
-        loss = 0 
-        for i in range(2):
-            loss += self.loss_box[i].data.cpu().numpy()[0]
-        return loss
-
-    def get_roi_cross_entropy(self):
-        loss = 0 
-        for i in range(2):
-            loss += self.roi_cross_entropy[i].data.cpu().numpy()[0]
-        return loss
-
-
-
 
     def forward(self, target_data, im_data, gt_boxes=None, features_given=False, im_info=None):
 
-        total_time = time.time()
-        feature_time = time.time()
 
         if not features_given:
-            im_info = im_data.shape[1:]   
             #get image features 
             img_features = self.features(im_data)
             target_features = self.features(target_data)
@@ -88,138 +60,111 @@ class TDID(nn.Module):
             target_features = target_data 
 
 
-        feature_time = time.time() - feature_time
-        upsample_time = time.time()
-
-        img_features_us = F.upsample_bilinear(img_features, scale_factor=2)
-        
-        upsample_time = time.time() - upsample_time
-        det_net_time = time.time() 
-
         #get cross correlation of each target's features with image features
         #(same padding)
         padding = (max(0,int(target_features.size()[2]/2)), 
                          max(0,int(target_features.size()[3]/2)))
-        
-        all_scores = []
-        all_bbox_pred = []
-        all_rois = []
 
-        for i in range(2):
 
-            if i == 1:
-                img_features = F.upsample_bilinear(img_features,
-                                                   scale_factor=2)
-    
+        ccs = []
+        diffs = []
+        for b_ind in range(img_features.size()[0]):
+            target_inds = network.np_to_variable(np.asarray([b_ind*2, b_ind*2+1]),
+                                                is_cuda=True, dtype=torch.LongTensor)
+            sample_targets1 = torch.index_select(target_features,0,target_inds[0])
+            sample_targets2 = torch.index_select(target_features,0,target_inds[1])
+            img_ind = network.np_to_variable(np.asarray([b_ind]),
+                                                is_cuda=True, dtype=torch.LongTensor)
+            sample_img = torch.index_select(img_features,0,img_ind)
 
-            ccs = []
-            diffs = []
-            for b_ind in range(img_features.size()[0]):
-                target_inds = network.np_to_variable(np.asarray([b_ind*2, b_ind*2+1]),
-                                                    is_cuda=True, dtype=torch.LongTensor)
-                sample_targets1 = torch.index_select(target_features,0,target_inds[0])
-                sample_targets2 = torch.index_select(target_features,0,target_inds[1])
-                img_ind = network.np_to_variable(np.asarray([b_ind]),
-                                                    is_cuda=True, dtype=torch.LongTensor)
-                sample_img = torch.index_select(img_features,0,img_ind)
-
-                sample_targets1 = sample_targets1.view(-1,1,sample_targets1.size()[2], 
-                                                       sample_targets1.size()[3])
-                sample_targets2 = sample_targets2.view(-1,1,sample_targets2.size()[2], 
-                                                       sample_targets2.size()[3])
+            sample_targets1 = sample_targets1.view(-1,1,sample_targets1.size()[2], 
+                                                   sample_targets1.size()[3])
+            sample_targets2 = sample_targets2.view(-1,1,sample_targets2.size()[2], 
+                                                   sample_targets2.size()[3])
 
 
 
-                #get diff
-                tf1_pooled = F.max_pool2d(sample_targets1,(sample_targets1.size()[2],
-                                                           sample_targets1.size()[3]))
-                tf2_pooled = F.max_pool2d(sample_targets2,(sample_targets2.size()[2],
-                                                           sample_targets2.size()[3]))
+            #get diff
+            tf1_pooled = F.max_pool2d(sample_targets1,(sample_targets1.size()[2],
+                                                       sample_targets1.size()[3]))
+            tf2_pooled = F.max_pool2d(sample_targets2,(sample_targets2.size()[2],
+                                                       sample_targets2.size()[3]))
 
-                diff1 = sample_img - tf1_pooled.permute(1,0,2,3).expand_as(sample_img)
-                diff2 = sample_img - tf2_pooled.permute(1,0,2,3).expand_as(sample_img)
-                diffs.append(torch.cat([diff1,diff2],1))
+            diff1 = sample_img - tf1_pooled.permute(1,0,2,3).expand_as(sample_img)
+            diff2 = sample_img - tf2_pooled.permute(1,0,2,3).expand_as(sample_img)
+            diffs.append(torch.cat([diff1,diff2],1))
 
-           
-                cc1 = F.conv2d(sample_img,sample_targets1,padding=padding,groups=self.groups) 
-                cc2 = F.conv2d(sample_img,sample_targets2,padding=padding,groups=self.groups) 
-                cc = torch.cat([cc1,cc2],1)
-                cc = self.select_to_match_dimensions(cc,sample_img)
-                ccs.append(cc)
+       
+            cc1 = F.conv2d(sample_img,sample_targets1,padding=padding,groups=self.groups) 
+            cc2 = F.conv2d(sample_img,sample_targets2,padding=padding,groups=self.groups) 
+            cc = torch.cat([cc1,cc2],1)
+            cc = self.select_to_match_dimensions(cc,sample_img)
+            ccs.append(cc)
 
-            cc = torch.cat(ccs,0)
-            cc = self.cc_conv(cc)
-            diffs = torch.cat(diffs,0) 
-            diffs = self.diff_conv(diffs)
+        cc = torch.cat(ccs,0)
+        cc = self.cc_conv(cc)
+        diffs = torch.cat(diffs,0) 
+        diffs = self.diff_conv(diffs)
+        #reshape target from 2xCxHxW to 2Cx1xHxW for cross corr
+        #target_features = target_features.view(-1,1,target_features.size()[2], 
+        #                                       target_features.size()[3])
 
-            cc = torch.cat([cc,img_features, diffs],1)
-            rpn_conv1 = self.conv1(cc)
-
-     
-            # rpn score
-            rpn_cls_score = self.score_conv(rpn_conv1) 
-            rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
-            rpn_cls_prob = F.softmax(rpn_cls_score_reshape)
-            rpn_cls_prob_reshape = self.reshape_layer(rpn_cls_prob,
-                                                      len(self.anchor_scales[0])*3*2)
-
-            # rpn boxes
-            rpn_bbox_pred = self.bbox_conv(rpn_conv1)
-
-
-
-
-
-            # proposal layer
-            cfg_key = 'TRAIN'
-            rois,scores, anchor_inds, labels = self.proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred,im_info,
-                                                cfg_key, self._feat_stride[i], self.anchor_scales[i], gt_boxes)
-        
-            # generating training labels and build the rpn loss
-            if self.training:
-                assert gt_boxes is not None
-                rpn_data = self.anchor_target_layer(rpn_cls_score,gt_boxes, 
-                                                    im_info,
-                                                    self._feat_stride[i],
-                                                    self.anchor_scales[i])
-                self.cross_entropy[i], self.loss_box[i] = self.build_loss(rpn_cls_score_reshape, rpn_bbox_pred, rpn_data)
-                self.roi_cross_entropy[i] = self.build_roi_loss(rpn_cls_score, rpn_cls_prob_reshape, scores,anchor_inds, labels)
-
-
-            #return target_features, features, rois, scores
-            bbox_pred = []
-            for il in range(len(rois)):
-                bbox_pred.append(network.np_to_variable(np.zeros((rois[il].size()[0],8))))
-
-            all_scores.append(scores)
-            all_bbox_pred.append(bbox_pred)
-            all_rois.append(rois)
-
-
-        det_net_time = time.time()  - det_net_time
-        print 'feature: {} upsample:{} detnet:{}'.format(feature_time,
-                    upsample_time,det_net_time) 
-
+#        cc = F.conv2d(img_features,target_features,
+#                      padding=padding, groups=self.groups)
+#
+#        cc = self.select_to_match_dimensions(cc,img_features)
+#
+#        if cc.size()[0] > 1:
+#            chosen_feats = []
+#            for b_ind in range(cc.size()[0]):
+#                b_ind_var = network.np_to_variable(np.asarray([b_ind]),is_cuda=True,dtype=torch.LongTensor)
+#                cf = torch.index_select(cc,0,b_ind_var)
+#                channels = (b_ind+1) * np.arange(self.groups*2)
+#                channels = network.np_to_variable(channels,is_cuda=True,dtype=torch.LongTensor)
+#                cf = torch.index_select(cf,1,channels)
+#                chosen_feats.append(cf)
+#                 
+#        
+#            cc = torch.cat(chosen_feats,0)
+       
+        cc = torch.cat([cc,img_features, diffs],1) 
+        rpn_conv1 = self.conv1(cc)
+        #rpn_conv2 = self.conv2(img_features)
 
  
-        all_scores = torch.cat(all_scores, 1)
-        all_rois = torch.cat(all_rois, 1)
-        output_bbox_pred=[]
-        for i in range(len(all_bbox_pred[0])):
-            output_bbox_pred.append(torch.cat((all_bbox_pred[0][i],
-                                               all_bbox_pred[1][i]), 0))
+        # rpn score
+        rpn_cls_score = self.score_conv(rpn_conv1)
+        rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
+        rpn_cls_prob = F.softmax(rpn_cls_score_reshape)
+        rpn_cls_prob_reshape = self.reshape_layer(rpn_cls_prob, len(self.anchor_scales)*3*2)
+
+        # rpn boxes
+        #rpn_bbox_pred = self.bbox_conv(rpn_conv1)
+        rpn_bbox_pred = self.bbox_conv(rpn_conv1)
+
+        # proposal layer
+        #cfg_key = 'TRAIN' if self.training else 'TEST'
+        cfg_key = 'TRAIN'
+        rois,scores, anchor_inds, labels = self.proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred,im_info,
+                                            self.cfg, self._feat_stride, self.anchor_scales, gt_boxes)
+    
+        # generating training labels and build the rpn loss
+        if self.training:
+            assert gt_boxes is not None
+            rpn_data = self.anchor_target_layer(rpn_cls_score,gt_boxes, 
+                                                im_info, self.cfg,
+                                                self._feat_stride, self.anchor_scales)
+            self.cross_entropy, self.loss_box = self.build_loss(rpn_cls_score_reshape, rpn_bbox_pred, rpn_data)
+            self.roi_cross_entropy = self.build_roi_loss(rpn_cls_score, rpn_cls_prob_reshape, scores,anchor_inds, labels)
+
+        #return target_features, features, rois, scores
+        bbox_pred = []
+        for il in range(len(rois)):
+            bbox_pred.append(network.np_to_variable(np.zeros((rois[il].size()[0],8))))
+        return scores, bbox_pred, rois
 
 
 
-        #img_features = torch.max(img_features.squeeze(0),0)[0].data.cpu().numpy()
-        #cc1 = torch.max(cc1.squeeze(0),0)[0].data.cpu().numpy()
-        #diff1 = torch.max(diff1.squeeze(0),0)[0].data.cpu().numpy()
-        #rpn_conv1 = torch.max(rpn_conv1.squeeze(0),0)[0].data.cpu().numpy()
-        img_features = torch.mean(img_features.squeeze(0),0).data.cpu().numpy()
-        cc1 = torch.mean(cc1.squeeze(0),0).data.cpu().numpy()
-        diff1 = torch.mean(diff1.squeeze(0),0).data.cpu().numpy()
-        rpn_conv1 = torch.mean(rpn_conv1.squeeze(0),0).data.cpu().numpy()
-        return all_scores, output_bbox_pred, all_rois #, [img_features,cc1,diff1,rpn_conv1]
 
 
 
@@ -302,7 +247,7 @@ class TDID(nn.Module):
 
 
     @staticmethod
-    def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride, anchor_scales, gt_boxes=None):
+    def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, _feat_stride, anchor_scales, gt_boxes=None):
         
         #convert to  numpy
         rpn_cls_prob_reshape = rpn_cls_prob_reshape.data.cpu().numpy()
@@ -310,8 +255,7 @@ class TDID(nn.Module):
 
         rois, scores, anchor_inds, labels = proposal_layer_py(rpn_cls_prob_reshape,
                                                                rpn_bbox_pred,
-        #prop_info = proposal_layer_py(rpn_cls_prob_reshape, rpn_bbox_pred,
-                                                      im_info, cfg_key, 
+                                                      im_info, cfg, 
                                                       _feat_stride=_feat_stride,
                                                       anchor_scales=anchor_scales,
                                                       gt_boxes=gt_boxes)
@@ -334,7 +278,8 @@ class TDID(nn.Module):
 
 
     @staticmethod
-    def anchor_target_layer(rpn_cls_score, gt_boxes,im_info, _feat_stride, anchor_scales):
+    def anchor_target_layer(rpn_cls_score, gt_boxes, im_info,
+                            cfg, _feat_stride, anchor_scales):
         """
         rpn_cls_score: for pytorch (1, Ax2, H, W) bg/fg scores of previous conv layer
         gt_boxes: (G, 5) vstack of [x1, y1, x2, y2, class]
@@ -355,9 +300,8 @@ class TDID(nn.Module):
         """
         rpn_cls_score = rpn_cls_score.data.cpu().numpy()
         rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights = \
-            anchor_target_layer_py(rpn_cls_score, gt_boxes, im_info, _feat_stride, anchor_scales)
-        #anchor_info = \
-        #    anchor_target_layer_py(rpn_cls_score, gt_boxes, im_info, _feat_stride, anchor_scales)
+            anchor_target_layer_py(rpn_cls_score, gt_boxes, im_info,
+                                   cfg, _feat_stride, anchor_scales)
 
         rpn_labels = network.np_to_variable(rpn_labels, is_cuda=True, dtype=torch.LongTensor)
         rpn_bbox_targets = network.np_to_variable(rpn_bbox_targets, is_cuda=True)
