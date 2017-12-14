@@ -1,7 +1,10 @@
+import torch
+import torchvision.models as models
 import os
 import cv2
 import numpy as np
 import math
+import sys
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD
 import active_vision_dataset_processing.data_loading.transforms as AVD_transforms
@@ -294,6 +297,40 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
     return dataset
 
 
+
+
+
+def write_training_meta(cfg,net):
+    """
+    Writes a text file that describes model and paramters.
+    
+    ex) write_training_meta(cfg,net)
+    """
+    meta_fid = open(os.path.join(cfg.META_SAVE_DIR, cfg.MODEL_BASE_SAVE_NAME + '.txt'),'w')
+   
+    config_params = [attr for attr in dir(cfg)
+                     if not callable(getattr(cfg, attr)) 
+                     and not attr.startswith("__")] 
+    for param in config_params:
+        if param == 'ID_TO_NAME' or param == 'NAME_TO_ID':
+            continue
+        meta_fid.write('{}: {}\n'.format(param, str(getattr(cfg,param))))
+
+    meta_fid.write(net.__str__())
+    meta_fid.close()
+
+
+
+def load_pretrained_weights(model_name):
+    if model_name == 'vgg16_bn':
+        vgg16_bn = models.vgg16_bn(pretrained=True)
+        return torch.nn.Sequential(*list(vgg16_bn.features.children())[:-1])
+    elif model_name == 'squeezenet1_1':
+        fnet = models.squeezenet1_1(pretrained=True)
+        return torch.nn.Sequential(*list(fnet.features.children())[:-1])
+    else:
+        print 'model name {} not supported!'.format(model_name)
+        sys.exit()
 
 
 

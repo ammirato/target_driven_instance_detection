@@ -1,9 +1,12 @@
-import cv2
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+import torchvision.models as models
+
+import cv2
+import numpy as np
+import sys
 
 from utils.timer import Timer
 #from rpn_msr.tdid_proposal_layer import proposal_layer as proposal_layer_py
@@ -13,7 +16,7 @@ from rpn_msr.anchor_target_layer import anchor_target_layer as anchor_target_lay
 
 import network
 from network import Conv2d, FC
-from vgg16 import VGG16
+#from vgg16 import VGG16
 
 
 
@@ -30,7 +33,7 @@ class TDID(nn.Module):
         self.cfg = cfg
 
         #first 5 conv layers of VGG? only resizing is 4 max pools
-        self.features = VGG16(bn=False)
+        self.features = self.get_feature_net(cfg.FEATURE_NET_NAME)
 
         self.conv1 = Conv2d(2*self.groups+512,512, 3, relu=False, same_padding=True)
         self.cc_conv = Conv2d(2*self.groups,512, 3, relu=True, same_padding=True)
@@ -336,4 +339,15 @@ class TDID(nn.Module):
         return features
 
 
+    @staticmethod
+    def get_feature_net(net_name):
+        if net_name == 'vgg16_bn':
+            fnet = models.vgg16_bn(pretrained=False)
+            return torch.nn.Sequential(*list(fnet.features.children())[:-1]) 
+        elif net_name == 'squeezenet1_1':
+            fnet = models.squeezenet1_1(pretrained=False)
+            return torch.nn.Sequential(*list(fnet.features.children())[:-1]) 
+        else:
+            print 'feature net type not supported!'
+            sys.exit() 
     

@@ -31,7 +31,7 @@ target_images ={}
 if cfg.PYTORCH_FEATURE_NET:
     target_images = get_target_images(cfg.TARGET_IMAGE_DIR,cfg.NAME_TO_ID.keys())
 else:
-    'Must use pytorch pretrained model, others not supported'
+    print 'Must use pytorch pretrained model, others not supported'
     #would need to add new normaliztion to get_target_images, and elsewhere
 
 #make sure only targets that have ids, and have target images are chosen
@@ -65,47 +65,16 @@ if cfg.USE_VID:
                            multiple_targets=True, 
                            batch_size=cfg.BATCH_SIZE)
 
-
-
-#write meta data out
-#meta_fid = open(os.path.join(text_out_dir,save_name_base+'.txt'),'w')
-#meta_fid.write('save name: {}\n'.format(save_name_base))
-#meta_fid.write('batch norm: {}\n'.format(use_batch_norm))
-#meta_fid.write('torch vgg: {}\n'.format(use_torch_vgg))
-#meta_fid.write('pretrained vgg: {}\n'.format(use_pretrained_vgg))
-#meta_fid.write('batch_size: {}\n'.format(batch_size))
-#meta_fid.write('vary images: {}\n'.format(vary_images))
-#meta_fid.write('chosen_ids: {}\n'.format(chosen_ids))
-#meta_fid.write('val chosen_ids: {}\n'.format(val_chosen_ids))
-#meta_fid.write('train_list: {}\n'.format(train_list))
-#meta_fid.write('val_lists: {}\n'.format(val_lists))
-#meta_fid.write('target_path: {}\n'.format(target_path))
-#if use_VID:
-#    meta_fid.write('VID_target_size: {}\n'.format(target_size))
-#    meta_fid.write('vid_set: {}\n'.format('train_single'))
-#meta_fid.write('learing rate: {}\n'.format(lr))
-#if load_trained_model:
-#    meta_fid.write('start from: {}\n'.format(trained_model_name))
-#meta_fid.close()
-
-
 print('Loading network...')
 net = TDID(cfg)
-vgg16_bn = models.vgg16_bn(pretrained=False)
-net.features = torch.nn.Sequential(*list(vgg16_bn.features.children())[:-1])
-net.features.eval()#freeze batchnorms layers?
-
 if cfg.LOAD_FULL_MODEL:
     #load a previously trained model
     network.load_net(trained_model_path + trained_model_name, net)
 else:
-    #load pretrained vgg weights, and init everything else randomly
     network.weights_normal_init(net, dev=0.01)
-    if cfg.USE_PRETRAINED_WEIGHTS: 
-        vgg16_bn = models.vgg16_bn(pretrained=True)
-        net.features = torch.nn.Sequential(*list(vgg16_bn.features.children())[:-1])
-        net.features.eval()
-
+    if cfg.USE_PRETRAINED_WEIGHTS:
+        net.features = load_pretrained_weights(cfg.FEATURE_NET_NAME) 
+net.features.eval()#freeze batchnorms layers?
 
 #put net on gpu
 net.cuda()
@@ -126,7 +95,7 @@ train_loss = 0
 t = Timer()
 t.tic()
 
-
+write_training_meta(cfg,net)
 print('Begin Training...')
 for epoch in range(cfg.MAX_NUM_EPOCHS):
     targets_cnt = {}#how many times a target is used(visible, total)
@@ -251,7 +220,7 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
                                               collate_fn=AVD.collate)
         net.eval()
         model_name = cfg.MODEL_BASE_SAVE_NAME + '_{}'.format(epoch)
-        all_results = test_net(model_name, net, valloader, cfg.NAME_TO_ID, 
+        all_results = test_net(model_name, net, valloader, cfg.ID_TO_NAME, 
                                target_images,cfg.VAL_OBJ_IDS,cfg, 
                                max_dets_per_target=cfg.MAX_DETS_PER_TARGET,
                                output_dir=cfg.TEST_OUTPUT_DIR,
@@ -263,8 +232,8 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
 
         save_name = os.path.join(cfg.SNAPSHOT_SAVE_DIR, 
                                  (cfg.MODEL_BASE_SAVE_NAME+
-                                  '_{}_{}_{:1.5f}_{:1.5f}.h5').format(
-                                 epoch, step, epoch_loss/epoch_step_cnt, m_ap))
+                                  '_{}_{:1.5f}_{:1.5f}.h5').format(
+                                 epoch, epoch_loss/epoch_step_cnt, m_ap))
         network.save_net(save_name, net)
         print('save model: {}'.format(save_name))
 
