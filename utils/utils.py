@@ -328,6 +328,9 @@ def load_pretrained_weights(model_name):
     elif model_name == 'squeezenet1_1':
         fnet = models.squeezenet1_1(pretrained=True)
         return torch.nn.Sequential(*list(fnet.features.children())[:-1])
+    elif model_name == 'resnet101':
+        fnet = models.resnet101(pretrained=True)
+        return torch.nn.Sequential(*list(fnet.children())[:-2])
     else:
         print 'model name {} not supported!'.format(model_name)
         sys.exit()

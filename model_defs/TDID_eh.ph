@@ -22,12 +22,12 @@ class TDID(nn.Module):
     def __init__(self, cfg):
         super(TDID, self).__init__()
         self.cfg = cfg
-        self.anchor_scales = cfg.ANCHOR_SCALES
+        self.anchor_scale = cfg.ANCHOR_SCALES
 
         self.features,self._feat_stride,self.num_feature_channels = \
                                     self.get_feature_net(cfg.FEATURE_NET_NAME)
 
-        self.groups = self.num_feature_channels
+
 
 
         self.conv1 = Conv2d(3*self.num_feature_channels,
@@ -60,6 +60,9 @@ class TDID(nn.Module):
             img_features = im_data
             target_features = target_data 
 
+
+        #get cross correlation of each target's features with image features
+        #(same padding)
         padding = (max(0,int(target_features.size()[2]/2)), 
                          max(0,int(target_features.size()[3]/2)))
         ccs = []
@@ -69,26 +72,32 @@ class TDID(nn.Module):
                                                 is_cuda=True, dtype=torch.LongTensor)
             sample_img = torch.index_select(img_features,0,img_ind)
 
-            diff = []
-            cc = []
-            for t_ind in range(self.cfg.NUM_TARGETS):
-                target_ind = network.np_to_variable(np.asarray([b_ind*2+t_ind]),
+            for t_ind in range(cfg.NUM_TARGETS):
+                target_inds = network.np_to_variable(np.asarray([b_ind*2, b_ind*2+1]),
                                                     is_cuda=True, dtype=torch.LongTensor)
-                sample_target = torch.index_select(target_features,0,target_ind[0])
+                sample_targets1 = torch.index_select(target_features,0,target_inds[0])
+                sample_targets2 = torch.index_select(target_features,0,target_inds[1])
 
-                sample_target = sample_target.view(-1,1,sample_target.size()[2], 
-                                                   sample_target.size()[3])
-                tf_pooled = F.max_pool2d(sample_target,(sample_target.size()[2],
-                                                           sample_target.size()[3]))
+                sample_targets1 = sample_targets1.view(-1,1,sample_targets1.size()[2], 
+                                                       sample_targets1.size()[3])
+                sample_targets2 = sample_targets2.view(-1,1,sample_targets2.size()[2], 
+                                                       sample_targets2.size()[3])
+                #get diff
+                tf1_pooled = F.max_pool2d(sample_targets1,(sample_targets1.size()[2],
+                                                           sample_targets1.size()[3]))
+                tf2_pooled = F.max_pool2d(sample_targets2,(sample_targets2.size()[2],
+                                                           sample_targets2.size()[3]))
 
-                diff.append(sample_img - tf_pooled.permute(1,0,2,3).expand_as(sample_img))
-                cc.append(F.conv2d(sample_img,sample_target,padding=padding,groups=self.groups))
-                
+                diff1 = sample_img - tf1_pooled.permute(1,0,2,3).expand_as(sample_img)
+                diff2 = sample_img - tf2_pooled.permute(1,0,2,3).expand_as(sample_img)
+                diffs.append(torch.cat([diff1,diff2],1))
 
-            cc = torch.cat(cc,1)
-            cc = self.select_to_match_dimensions(cc,sample_img)
-            ccs.append(cc)
-            diffs.append(torch.cat(diff,1))
+           
+                cc1 = F.conv2d(sample_img,sample_targets1,padding=padding,groups=self.groups) 
+                cc2 = F.conv2d(sample_img,sample_targets2,padding=padding,groups=self.groups) 
+                cc = torch.cat([cc1,cc2],1)
+                cc = self.select_to_match_dimensions(cc,sample_img)
+                ccs.append(cc)
 
         cc = torch.cat(ccs,0)
         cc = self.cc_conv(cc)
@@ -269,9 +278,6 @@ class TDID(nn.Module):
         elif net_name == 'squeezenet1_1':
             fnet = models.squeezenet1_1(pretrained=False)
             return torch.nn.Sequential(*list(fnet.features.children())[:-1]), 16, 512 
-        elif net_name == 'resnet101':
-            fnet = models.resnet101(pretrained=False)
-            return torch.nn.Sequential(*list(fnet.children())[:-2]), 32, 2048 
         else:
             print 'feature net type not supported!'
             sys.exit() 

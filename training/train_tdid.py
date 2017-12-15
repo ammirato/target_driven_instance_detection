@@ -69,7 +69,7 @@ print('Loading network...')
 net = TDID(cfg)
 if cfg.LOAD_FULL_MODEL:
     #load a previously trained model
-    network.load_net(trained_model_path + trained_model_name, net)
+    network.load_net(cfg.FULL_MODEL_LOAD_DIR + cfg.FULL_MODEL_LOAD_NAME, net)
 else:
     network.weights_normal_init(net, dev=0.01)
     if cfg.USE_PRETRAINED_WEIGHTS:

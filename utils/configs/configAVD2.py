@@ -22,20 +22,20 @@ class Config():
 
 
     #Model Loading and saving 
-    BATCH_NORM= True
-    FEATURE_NET_NAME= 'squeezenet1_1'
+    FEATURE_NET_NAME= 'resnet101'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
-    LOAD_FULL_MODEL= False
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_2'
+    LOAD_FULL_MODEL= False 
+    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_5'
     SAVE_FREQ = 1
     SAVE_BY_EPOCH = True  
+    #BATCH_NORM= True
 
 
     #Training 
     MAX_NUM_EPOCHS= 30
-    BATCH_SIZE= 16 
+    BATCH_SIZE= 1
     LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
@@ -98,11 +98,14 @@ class Config():
 
     ###############################################
     #Model paramters
+    ANCHOR_SCALES = [2,4,8]
+    NUM_TARGETS = 2
+    
+
     PRE_NMS_TOP_N = 6000
     POST_NMS_TOP_N = 300
     NMS_THRESH = .7
     PROPOSAL_MIN_BOX_SIZE = 8 
-
     PROPOSAL_CLOBBER_POSITIVES = False 
     PROPOSAL_NEGATIVE_OVERLAP = .3
     PROPOSAL_POSITIVE_OVERLAP = .6
