@@ -13,10 +13,9 @@ class Config():
     FULL_MODEL_LOAD_DIR= BASE_DIR + 'Detection/Models/'
     SNAPSHOT_SAVE_DIR= BASE_DIR + 'Detection/Models/'
     META_SAVE_DIR = BASE_DIR + 'Detection/ModelsMeta/'
-    TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
-    #TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80_t0_copy/'
+    TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_and_UW_80/'
     TEST_OUTPUT_DIR = BASE_DIR + 'Detection/TestOutputs/'
-    GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/avd_split2.json'
+    GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/all_uw_scenes.json'
     #PRETRAINED_MODELS_DIR= BASE_DIR + ''
     #using VID dataset is not necessary, set USE_VID to false
     VID_DATA_DIR = BASE_DIR + 'ILSVRC/'
@@ -28,7 +27,7 @@ class Config():
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_12'
+    MODEL_BASE_SAVE_NAME = 'TDID_GEN4UW_3'
     SAVE_FREQ = 1
     SAVE_BY_EPOCH = True  
     #BATCH_NORM= True
@@ -36,17 +35,16 @@ class Config():
 
     #Training 
     MAX_NUM_EPOCHS= 30
-    BATCH_SIZE = 1 
+    BATCH_SIZE= 4 
     LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
     NUM_WORKERS = 4
-    LOSS_MULT = 1
 
     #Target Images
     PRELOAD_TARGET_IMAGES= False
-    AUGMENT_TARGET_IMAGES= False 
+    AUGMENT_TARGET_IMAGES= True
     MIN_TARGET_SIZE = 32
 
     #Training Data
@@ -62,6 +60,8 @@ class Config():
                  'Home_001_1',
                  'Home_001_2',
                  'Home_002_1',
+                 'Home_003_1',
+                 'Home_003_2',
                  'Home_004_1',
                  'Home_004_2',
                  'Home_005_1',
@@ -70,14 +70,34 @@ class Config():
                  'Home_008_1',
                  'Home_014_1',
                  'Home_014_2',
+                 'Office_001_1',
+
+                 'Home_101_1',
+                 'Home_102_1',
+                 'Home_103_1',
+                 'Home_104_1',
+                 'Home_105_1',
+                 'Home_106_1',
+                 'Home_107_1',
+                 'Home_108_1',
+                 'Home_109_1',
+
+                'Gen_010_2',
+
+
                 ]
 
-    VAL_OBJ_IDS = TRAIN_OBJ_IDS 
+    VAL_OBJ_IDS = [1050, 1052, 1053, 1054, 1055, 1270, 1143, 1243, 1244, 1245, 1247, 1252, 1255, 1256, 1257, 1004, 1005, 1007, 1140, 1142, 1271, 1272] 
     VAL_FRACTION_OF_NO_BOX_IMAGES = 1 
     VAL_LIST=   [
-                 'Home_003_1',
-                 'Home_003_2',
-                 'Office_001_1',
+                 'Office_201_1',
+                 'Office_201_2',
+                 'Office_201_3',
+                 'Office_202_1',
+                 'Office_203_1',
+                 'Office_204_1',
+                 'Office_205_1',
+                 'Office_205_2',
                 ]
 
     #VID dataset

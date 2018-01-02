@@ -22,7 +22,7 @@ from instance_detection.evaluation.COCO_eval.coco_det_eval import coco_det_eval
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
 # load config
-cfg_file = 'configAVD2' #NO EXTENSTION!
+cfg_file = 'configAVD2' #NO FILE EXTENSTION!
 cfg = importlib.import_module('instance_detection.utils.configs.'+cfg_file)
 cfg = cfg.get_config()
 
@@ -36,7 +36,9 @@ else:
 
 #make sure only targets that have ids, and have target images are chosen
 train_ids = check_object_ids(cfg.TRAIN_OBJ_IDS, cfg.ID_TO_NAME,target_images) 
+cfg.TRAIN_OBJ_IDS = train_ids
 val_ids = check_object_ids(cfg.VAL_OBJ_IDS, cfg.ID_TO_NAME,target_images) 
+cfg.VAL_OBJ_IDS = val_ids
 if train_ids==-1 or val_ids==-1:
     print 'Invalid IDS!'
     sys.exit()
@@ -96,6 +98,7 @@ t = Timer()
 t.tic()
 
 write_training_meta(cfg,net)
+
 print('Begin Training...')
 for epoch in range(cfg.MAX_NUM_EPOCHS):
     targets_cnt = {}#how many times a target is used(visible, total)
@@ -170,7 +173,7 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
 
         # forward
         net(target_data, im_data, gt_boxes=gt_boxes, im_info=im_info)
-        loss = net.loss
+        loss = net.loss * cfg.LOSS_MULT
 
         train_loss += loss.data[0]
         epoch_step_cnt += 1

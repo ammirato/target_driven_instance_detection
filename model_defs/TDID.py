@@ -28,8 +28,6 @@ class TDID(nn.Module):
                                     self.get_feature_net(cfg.FEATURE_NET_NAME)
 
         self.groups = self.num_feature_channels
-
-
         self.conv1 = Conv2d(3*self.num_feature_channels,
                             512, 3, relu=False, same_padding=True)
         self.cc_conv = Conv2d(cfg.NUM_TARGETS*self.num_feature_channels,
@@ -42,6 +40,7 @@ class TDID(nn.Module):
         self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
         # loss
+        self.roi_cross_entropy = None
         self.cross_entropy = None
         self.loss_box = None
 
