@@ -14,7 +14,7 @@ class Config():
     TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
     #TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80_t0_copy/'
     TEST_OUTPUT_DIR = BASE_DIR + 'Detection/TestOutputs/'
-    GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/avd_split2.json'
+    GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/gmu_split3.json'
     #PRETRAINED_MODELS_DIR= BASE_DIR + ''
     #using VID dataset is not necessary, set USE_VID to false
     VID_DATA_DIR = BASE_DIR + 'ILSVRC/'
@@ -24,24 +24,24 @@ class Config():
     FEATURE_NET_NAME= 'vgg16_bn'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= 'TDID_AVD2_34_30_0.18115_0.55835.h5'
-    LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDIDS_AVD2_34'
-    SAVE_FREQ = 30 
-    SAVE_BY_EPOCH = True 
+    FULL_MODEL_LOAD_NAME= 'TDID_GMU3_01_27_0.71683_0.82304.h5'
+    LOAD_FULL_MODEL=True 
+    MODEL_BASE_SAVE_NAME = 'TDID_GMU3_02'
+    SAVE_FREQ = 3
+    SAVE_BY_EPOCH = True  
     #BATCH_NORM= True
 
 
     #Training 
-    MAX_NUM_EPOCHS= 31 
+    MAX_NUM_EPOCHS= 52
     BATCH_SIZE = 5 
-    LEARNING_RATE = .001
+    LEARNING_RATE = .0005
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
-    NUM_WORKERS = 8 
+    NUM_WORKERS = 4
     LOSS_MULT = 1
-    IMG_RESIZE = .75 
+    IMG_RESIZE = 0 
 
     #Target Images
     PRELOAD_TARGET_IMAGES= False
@@ -52,31 +52,26 @@ class Config():
     ID_MAP_FNAME= 'all_instance_id_map.txt'
     ID_TO_NAME = {}
     NAME_TO_ID = {}
-    OBJ_IDS_TO_EXCLUDE = [8,18,32,33]
+    OBJ_IDS_TO_EXCLUDE = []
 
-    TRAIN_OBJ_IDS= [cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE]
+    TRAIN_OBJ_IDS= [5,50,10,12,14,79,28,94,96,18,21]
     FRACTION_OF_NO_BOX_IMAGES = .1 
     MAX_OBJ_DIFFICULTY= 4
     TRAIN_LIST= [
-                 'Home_001_1',
-                 'Home_001_2',
-                 'Home_002_1',
-                 'Home_004_1',
-                 'Home_004_2',
-                 'Home_005_1',
-                 'Home_005_2',
-                 'Home_006_1',
-                 'Home_008_1',
-                 'Home_014_1',
-                 'Home_014_2',
+                 'Home_102_1',
+                 'Home_103_1',
+                 'Home_104_1',
+                 'Home_105_1',
+                 'Home_106_1',
+                 'Home_109_1',
                 ]
 
     VAL_OBJ_IDS = TRAIN_OBJ_IDS 
     VAL_FRACTION_OF_NO_BOX_IMAGES = 1 
     VAL_LIST=   [
-                 'Home_003_1',
-                 'Home_003_2',
-                 'Office_001_1',
+                 'Home_101_1',
+                 'Home_107_1',
+                 'Home_108_1',
                 ]
 
     #VID dataset
@@ -87,27 +82,24 @@ class Config():
 
     ##############################################
     #Testing
-    TEST_IMG_RESIZE = 0 
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
 
-    TEST_OBJ_IDS=[1,2,3,4,5]#,6,7,9,10,11] # [cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE]
+    TEST_OBJ_IDS= [cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE]
     TEST_FRACTION_OF_NO_BOX_IMAGES = 1
     TEST_LIST = [ 
-                 'Home_003_1',
-                 'Home_003_2',
-                 'Office_001_1',
+                'Home_003_1',
                 ]
     TEST_ONE_AT_A_TIME = False 
     ###############################################
     #Model paramters
-    ANCHOR_SCALES = [1,2,4]
+    ANCHOR_SCALES = [1,4,8]
     NUM_TARGETS = 2
     CORR_WITH_POOLED = True 
     USE_IMG_FEATS = False 
-    USE_DIFF_FEATS = True 
-    USE_CC_FEATS = True 
+    USE_DIFF_FEATS = True
+    USE_CC_FEATS = True
 
     PRE_NMS_TOP_N = 6000
     POST_NMS_TOP_N = 300

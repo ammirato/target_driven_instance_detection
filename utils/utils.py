@@ -29,8 +29,8 @@ def create_illumination_pattern(rows, cols, xCenter,yCenter,minI=.1,maxI=1,radiu
 
 illum_patterns = []
 for il in range(100):
-    xc,yc = np.random.choice(160,2)
-    illum_patterns.append(create_illumination_pattern(160,160,xc,yc))
+    xc,yc = np.random.choice(400,2)
+    illum_patterns.append(create_illumination_pattern(400,400,xc,yc))
 
 
 
@@ -87,9 +87,11 @@ def get_target_images(target_path, target_names,preload_images=False, for_testin
                     target_images[obj_name][type_ind].append(cv2.imread(
                                             os.path.join(target_path,t_dir,name)))
                 else:
-                    target_images[obj_name][type_ind].append(
-                                            os.path.join(target_path,t_dir,name))
-
+                    try:
+                        target_images[obj_name][type_ind].append(
+                                                os.path.join(target_path,t_dir,name))
+                    except:
+                        breakp=1
 
     #for testing, only 1 image per type, and must be loaded
     if for_testing:
@@ -177,7 +179,11 @@ def vary_image(img, crop_max=5, rotate_max=30,blur_max=9, do_illum=True):
     end_row = img.shape[0] - crops[1] 
     start_col = 0 + crops[2]
     end_col = img.shape[1] - crops[3]
-    img = img[start_row:end_row, start_col:end_col,:]
+    #img = img[start_row:end_row, start_col:end_col,:]
+    img[0:start_row,:,:] = 0
+    img[:,0:start_col,:] = 0
+    img[end_row:,:,:] = 0
+    img[:,end_col:,:] = 0
 
 
 
@@ -260,6 +266,7 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
                        max_difficulty=4,
                        fraction_of_no_box=.1,
                        instance_fname=None,
+                       classification=False,
                       ):
     """
     Returns a dataloader for the AVD dataset.
@@ -291,7 +298,7 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
     dataset = AVD.AVD(root=root,
                          scene_list=scene_list,
                          target_transform=target_trans,
-                         classification=False,
+                         classification=classification,
                          class_id_to_name=id_to_name_dict,
                          fraction_of_no_box=fraction_of_no_box)
     return dataset
@@ -331,6 +338,9 @@ def load_pretrained_weights(model_name):
     elif model_name == 'resnet101':
         fnet = models.resnet101(pretrained=True)
         return torch.nn.Sequential(*list(fnet.children())[:-2])
+    elif model_name == 'alexnet':
+        fnet = models.alexnet(pretrained=True)
+        return torch.nn.Sequential(*list(fnet.features.children()))
     else:
         print 'model name {} not supported!'.format(model_name)
         sys.exit()

@@ -7,7 +7,7 @@ import numpy as np
 import importlib
 
 from instance_detection.model_defs import network
-from instance_detection.model_defs.TDID import TDID
+from instance_detection.model_defs.TDID_class import TDID
 from instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
 
 from instance_detection.utils.timer import Timer
@@ -33,25 +33,10 @@ def im_detect(net, target_data,im_data, im_info, features_given=True):
         boxes (ndarray): R x (4*K) array of predicted bounding boxes
     """
 
-    cls_prob, bbox_pred, rois = net(target_data, im_data, 
+
+    scores = net(target_data, im_data, 
                                     features_given=features_given, im_info=im_info)
-    scores = cls_prob.data.cpu().numpy()[0,:,:]
-    zs = np.zeros((scores.size, 1))
-    scores = np.concatenate((zs,scores),1)
-    #boxes = rois.data.cpu().numpy()[:, 1:5] / im_info[0][2]
-    boxes = rois.data.cpu().numpy()[0,:, :] #/ im_info[0][2]
-
-    if False:
-        # Apply bounding-box regression deltas
-        box_deltas = bbox_pred[0].data.cpu().numpy()
-        pred_boxes = bbox_transform_inv(boxes, box_deltas)
-        #pred_boxes = clip_boxes(pred_boxes, im_data.shape[1:])
-        pred_boxes = clip_boxes(pred_boxes, im_info)
-    else:
-        # Simply repeat the boxes, once for each class
-        pred_boxes = np.tile(boxes, (1, scores.shape[1]))
-
-    return scores, pred_boxes
+    return scores
 
 
 def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids, cfg,
@@ -97,17 +82,26 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
 
 
 
-
+    total = 0
+    total_correct = 0
     #for i in range(num_images):
     for i,batch in enumerate(dataloader):
-        im_data= batch[0]
+        if i>100:
+            break
+        if len(batch[0]) == 0:
+            print batch
+            continue
+        im_data= batch[0][0]
         im_info = im_data.shape[:]
-        #if cfg.TEST_IMG_RESIZE > 0:
-        im_data = cv2.resize(im_data,(0,0),fx=.75, fy=.75)
         im_data=normalize_image(im_data,cfg)
         im_data = network.np_to_variable(im_data, is_cuda=True)
         im_data = im_data.unsqueeze(0)
         im_data = im_data.permute(0, 3, 1, 2)
+
+        print '{}/{}'.format(i, len(dataloader))
+
+        #get ground truth id
+        gt_id = batch[1][0][0]
 
         #get image name and index
         img_name = batch[1][1]
@@ -117,6 +111,9 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
         if not cfg.TEST_ONE_AT_A_TIME:
             img_features = net.features(im_data)
 
+        max_score = 0
+        max_id = -1
+        true_object_score = 0
         for id_ind,t_id in enumerate(chosen_ids):
             target_name = id_to_name[t_id]
             if target_name == 'background':
@@ -125,65 +122,37 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
             if cfg.TEST_ONE_AT_A_TIME:
                 target_data = target_data_dict[target_name]
                 _t['im_detect'].tic()
-                scores, boxes = im_detect(net, target_data, im_data, im_info,
+                scores = im_detect(net, target_data, im_data, im_info,
                                           features_given=False)
                 detect_time = _t['im_detect'].toc(average=False)
             else:
                 target_features = target_features_dict[target_name]
                 _t['im_detect'].tic()
-                scores, boxes = im_detect(net, target_features, img_features, im_info)
+                scores = im_detect(net, target_features, img_features, im_info)
                 detect_time = _t['im_detect'].toc(average=False)
 
             _t['misc'].tic()
+            
+            scores = scores.data.cpu().squeeze().numpy()
+            correct = False 
+            if scores[1]>max_score:
+                max_score = scores[1]
+                max_id = t_id
+            if t_id == gt_id:
+                true_object_score = scores[1] 
 
-            boxes *= (1.0/.75)        
-
-            #get scores for foreground, non maximum supression
-            inds = np.where(scores[:, 1] > score_thresh)[0]
-            fg_scores = scores[inds, 1]
-            fg_boxes = boxes[inds, 1 * 4:(1 + 1) * 4]
-            #if cfg.TEST_IMG_RESIZE >0:
-            #    fg_boxes[:,:3] *= (1.0/cfg.TEST_IMG_RESIZE)
-            fg_dets = np.hstack((fg_boxes, fg_scores[:, np.newaxis])) \
-                .astype(np.float32, copy=False)
-            keep = nms(fg_dets, cfg.TEST_NMS_OVERLAP_THRESH)
-            fg_dets = fg_dets[keep, :]
-
-            # Limit to max_per_target detections *over all classes*
-            if max_dets_per_target > 0:
-                image_scores = np.hstack([fg_dets[:, -1]])
-                if len(image_scores) > max_dets_per_target:
-                    image_thresh = np.sort(image_scores)[-max_dets_per_target]
-                    keep = np.where(fg_dets[:, -1] >= image_thresh)[0]
-                    fg_dets = fg_dets[keep, :]
-            nms_time = _t['misc'].toc(average=False)
-
-            print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
-                .format(i + 1, num_images, detect_time, nms_time)
-
-            #put class id in the box
-            fg_dets = np.insert(fg_dets,4,t_id,axis=1)
-            #all_image_dets = np.vstack((all_image_dets,fg_dets))
-
-            for box in fg_dets:
-                cid = int(box[4])
-                xmin = int(box[0])
-                ymin = int(box[1])
-                width = int(box[2]-box[0] + 1)
-                height = int(box[3]-box[1] + 1)
-                score = float(box[5])
-                results.append({'image_id':img_ind, 'category_id':cid, 'bbox':[xmin,ymin,width,height    ], 'score':score})
+        #if true_object_score >= max_score:
+        if max_id == gt_id:
+            total_correct +=1
+        total+=1
+        print 'maxid: {} gt: {} maxscore: {} gtscore: {}'.format(max_id, gt_id, max_score, true_object_score)
+    #if output_dir is not None:
+    #    with open(det_file, 'w') as f:
+    #        json.dump(results,f)
 
 
-
-        #record results by image name
-        #all_results[batch[1][1]] = all_image_dets.tolist()
-    if len(results) == 0:
-        results = [[]]
-    if output_dir is not None:
-        with open(det_file, 'w') as f:
-            json.dump(results,f)
-    return results
+    print '{}  {}  {}'.format(total_correct, total, float(total_correct)/float(total))    
+    return float(total_correct)/float(total) 
 
 
 
@@ -193,7 +162,7 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
 if __name__ == '__main__':
 
     #load config file
-    cfg_file = 'configAVD3' #NO EXTENSTION!
+    cfg_file = 'configUW_class' #NO EXTENSTION!
     cfg = importlib.import_module('instance_detection.utils.configs.'+cfg_file)
     cfg = cfg.get_config()
 
@@ -215,7 +184,11 @@ if __name__ == '__main__':
                               cfg.TEST_LIST,
                               test_ids,
                               max_difficulty=cfg.MAX_OBJ_DIFFICULTY,
-                              fraction_of_no_box=cfg.TEST_FRACTION_OF_NO_BOX_IMAGES)
+                              fraction_of_no_box=cfg.TEST_FRACTION_OF_NO_BOX_IMAGES,
+                              classification=True)
+
+
+    batch = testset[0]
 
     #create train/test loaders, with CUSTOM COLLATE function
     testloader = torch.utils.data.DataLoader(testset,

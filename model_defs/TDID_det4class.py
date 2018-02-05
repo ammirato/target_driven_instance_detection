@@ -49,8 +49,8 @@ class TDID(nn.Module):
     @property
     def loss(self):
         #return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
-        return self.cross_entropy + self.loss_box * 10
-        #return self.roi_cross_entropy
+        #return self.cross_entropy + self.loss_box*10
+        return self.roi_cross_entropy
 
     def forward(self, target_data, im_data, gt_boxes=None, features_given=False, im_info=None, return_timing_info=False):
 
@@ -160,15 +160,16 @@ class TDID(nn.Module):
             self.cross_entropy, self.loss_box = self.build_loss(rpn_cls_score_reshape, rpn_bbox_pred, rpn_data)
             self.roi_cross_entropy = self.build_roi_loss(rpn_cls_score, rpn_cls_prob_reshape, scores,anchor_inds, labels)
 
+
         #return target_features, features, rois, scores
         bbox_pred = []
         for il in range(len(rois)):
             bbox_pred.append(network.np_to_variable(np.zeros((rois[il].size()[0],8))))
         time_info['detection'] = timer.toc(average=False)
         if return_timing_info:
-            return scores, bbox_pred, rois, time_info
+            return scores
         else:
-            return scores, bbox_pred, rois
+            return scores
 
 
 
@@ -183,6 +184,9 @@ class TDID(nn.Module):
 
         fg_cnt = torch.sum(rpn_label.data.ne(0))
 
+        rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, size_average=False)
+
+
         # box loss
         rpn_bbox_targets = rpn_data[1]
         rpn_bbox_inside_weights = rpn_data[2]
@@ -193,6 +197,9 @@ class TDID(nn.Module):
         rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, size_average=False)
         rpn_loss_box = F.smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets, size_average=False) / (fg_cnt + 1e-4)
         return rpn_cross_entropy, rpn_loss_box
+
+
+        #return rpn_cross_entropy
 
 
     def build_roi_loss(self, rpn_cls_score_reshape, rpn_cls_prob_reshape, scores, anchor_inds, labels):
@@ -210,6 +217,9 @@ class TDID(nn.Module):
         labels = labels.view(-1)
 
         roi_cross_entropy = F.cross_entropy(rpn_cls_score, labels, size_average=False)
+
+
+
 
         return roi_cross_entropy
 

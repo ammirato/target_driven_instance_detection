@@ -10,47 +10,43 @@ import cv2
 import time
 
 from instance_detection.model_defs import network
-from instance_detection.model_defs.TDID import TDID 
+from instance_detection.model_defs.TDID_det4class import TDID 
 
 from instance_detection.utils.timer import Timer
 from instance_detection.utils.utils import *
 from instance_detection.utils.ILSVRC_VID_loader import VID_Loader
 
-from instance_detection.testing.test_tdid import test_net, im_detect
+from instance_detection.testing.test_tdid_det4class import test_net, im_detect
 from instance_detection.evaluation.COCO_eval.coco_det_eval import coco_det_eval 
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
 # load config
-#cfg_file = 'configGMUsynth2AVD' #NO FILE EXTENSTION!
-#cfg_file = 'configAVD2' #NO FILE EXTENSTION!
-cfg_file = 'configGEN4UW' #NO FILE EXTENSTION!
+#cfg_file = 'configDET4UWC' #NO FILE EXTENSTION!
+cfg_file = 'configGEN4UWC' #NO FILE EXTENSTION!
 cfg = importlib.import_module('instance_detection.utils.configs.'+cfg_file)
 cfg = cfg.get_config()
 
 
 
-def validate_and_save(cfg,net,valset,target_images, epoch):
+def validate_and_save(cfg,net,valset,target_images, epoch, iters):
     valloader = torch.utils.data.DataLoader(valset,
                                           batch_size=1,
                                           shuffle=True,
                                           collate_fn=AVD.collate)
     net.eval()
     model_name = cfg.MODEL_BASE_SAVE_NAME + '_{}'.format(epoch)
-    all_results = test_net(model_name, net, valloader, cfg.ID_TO_NAME, 
+    acc = test_net(model_name, net, valloader, cfg.ID_TO_NAME, 
                            target_images,cfg.VAL_OBJ_IDS,cfg, 
                            max_dets_per_target=cfg.MAX_DETS_PER_TARGET,
                            output_dir=cfg.TEST_OUTPUT_DIR,
                            score_thresh=cfg.SCORE_THRESH)
 
-    m_ap = coco_det_eval(cfg.GROUND_TRUTH_BOXES,
-                         cfg.TEST_OUTPUT_DIR+model_name+'.json',
-                         catIds=cfg.VAL_OBJ_IDS)
 
     save_name = os.path.join(cfg.SNAPSHOT_SAVE_DIR, 
                              (cfg.MODEL_BASE_SAVE_NAME+
-                              '_{}_{:1.5f}_{:1.5f}.h5').format(
-                             epoch, epoch_loss/epoch_step_cnt, m_ap))
+                              '_{}_{}_{:1.5f}_{:1.5f}.h5').format(
+                             epoch,iters, epoch_loss/epoch_step_cnt, acc))
     network.save_net(save_name, net)
     print('save model: {}'.format(save_name))
 
@@ -164,16 +160,14 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
         batch_target_data = []
         batch_gt_boxes = []
         for sample_ind in range(cfg.BATCH_SIZE):
-            img_resized = False
             im_data=batch[0][sample_ind]
-            if cfg.IMG_RESIZE >0 and np.random.rand() < .5:
-                img_resized = True
+            if cfg.IMG_RESIZE >0:
                 im_data = cv2.resize(im_data,(0,0),fx=cfg.IMG_RESIZE,fy=cfg.IMG_RESIZE)
-            #if cfg.AUGMENT_SCENE_IMAGES and np.random.rand() < .5:
-            #    im_data = vary_image(im_data,crop_max=50,rotate_max=15,do_illum=False)
+            if cfg.AUGMENT_SCENE_IMAGES and np.random.rand() < .5:
+                im_data = vary_image(im_data,crop_max=80,do_illum=False)
             im_data=normalize_image(im_data,cfg)
             gt_boxes = np.asarray(batch[1][sample_ind][0],dtype=np.float32) 
-            if img_resized >0  and gt_boxes.shape[0] >0:
+            if cfg.IMG_RESIZE >0  and gt_boxes.shape[0] >0:
                 gt_boxes[:,:4] *= cfg.IMG_RESIZE 
             #if there are no boxes for this image, add a dummy background box
             if gt_boxes.shape[0] == 0:
@@ -188,7 +182,7 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
             #pick a random target, with a bias towards choosing a target that 
             #is in the image. Also pick just that object's gt_box
             #if (np.random.rand() < .8 or not_present.shape[0]==0) and objects_present.shape[0]!=0:
-            if (np.random.rand() < .6 or not_present.shape[0]==0) and objects_present.shape[0]!=0:
+            if (np.random.rand() < .5 or not_present.shape[0]==0) and objects_present.shape[0]!=0:
                 target_ind = int(np.random.choice(objects_present))
                 gt_boxes = gt_boxes[np.where(gt_boxes[:,4]==target_ind)[0],:-1] 
                 gt_boxes[0,4] = 1
@@ -202,12 +196,18 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
             target_name = cfg.ID_TO_NAME[target_ind]
             target_data = []
             for t_type,_ in enumerate(target_images[target_name]):
-                img_ind = np.random.choice(np.arange(
-                                      len(target_images[target_name][t_type])))
-                target_img = cv2.imread(target_images[target_name][t_type][img_ind])
+                loaded_img = False
+                while not loaded_img:
+                    img_ind = np.random.choice(np.arange(
+                                          len(target_images[target_name][t_type])))
+                    target_img = cv2.imread(target_images[target_name][t_type][img_ind])
+                    if target_img is not None:
+                        loaded_img = True
+                    else:
+                        print target_images[target_name][t_type][img_ind]
 
                 if np.random.rand() < .9 and cfg.AUGMENT_TARGET_IMAGES:
-                    target_img = vary_image(target_img, do_illum=False)
+                    target_img = vary_image(target_img,do_illum=False)
                 target_img = normalize_image(target_img,cfg)
                 batch_target_data.append(target_img)
 
@@ -280,11 +280,11 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
 
 
         if (not cfg.SAVE_BY_EPOCH) and  total_iterations % cfg.SAVE_FREQ==0:
-            validate_and_save(cfg,net,valset,target_images,epoch)
+            validate_and_save(cfg,net,valset,target_images,epoch, total_iterations)
         
 
     ######################################################
     #epoch over
     if cfg.SAVE_BY_EPOCH and epoch % cfg.SAVE_FREQ == 0:
-        validate_and_save(cfg,net,valset,target_images, epoch)
+        validate_and_save(cfg,net,valset,target_images, epoch, total_iterations)
 

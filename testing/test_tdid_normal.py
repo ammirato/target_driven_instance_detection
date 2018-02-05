@@ -102,8 +102,8 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
     for i,batch in enumerate(dataloader):
         im_data= batch[0]
         im_info = im_data.shape[:]
-        #if cfg.TEST_IMG_RESIZE > 0:
-        im_data = cv2.resize(im_data,(0,0),fx=.75, fy=.75)
+        if cfg.TEST_IMG_RESIZE > 0:
+            im_data = cv2.resize(im_data,(0,0),fx=cfg.TEST_IMG_RESIZE, fy=cfg.TEST_IMG_RESIZE)
         im_data=normalize_image(im_data,cfg)
         im_data = network.np_to_variable(im_data, is_cuda=True)
         im_data = im_data.unsqueeze(0)
@@ -136,14 +136,12 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
 
             _t['misc'].tic()
 
-            boxes *= (1.0/.75)        
-
             #get scores for foreground, non maximum supression
             inds = np.where(scores[:, 1] > score_thresh)[0]
             fg_scores = scores[inds, 1]
             fg_boxes = boxes[inds, 1 * 4:(1 + 1) * 4]
-            #if cfg.TEST_IMG_RESIZE >0:
-            #    fg_boxes[:,:3] *= (1.0/cfg.TEST_IMG_RESIZE)
+            if cfg.TEST_IMG_RESIZE >0:
+                fg_boxes[:,:3] *= (1.0/cfg.TEST_IMG_RESIZE)
             fg_dets = np.hstack((fg_boxes, fg_scores[:, np.newaxis])) \
                 .astype(np.float32, copy=False)
             keep = nms(fg_dets, cfg.TEST_NMS_OVERLAP_THRESH)
@@ -193,7 +191,7 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
 if __name__ == '__main__':
 
     #load config file
-    cfg_file = 'configAVD3' #NO EXTENSTION!
+    cfg_file = 'configGEN4UW' #NO EXTENSTION!
     cfg = importlib.import_module('instance_detection.utils.configs.'+cfg_file)
     cfg = cfg.get_config()
 

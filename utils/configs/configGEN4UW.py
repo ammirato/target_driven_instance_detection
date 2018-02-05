@@ -1,7 +1,5 @@
 from instance_detection.utils.utils import *
 
-
-
 class Config():
     """
     Holds all config parameters for training/testing.
@@ -10,10 +8,11 @@ class Config():
     #Directories - MUST BE CHANGED for your environment
     BASE_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/'
     DATA_BASE_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
-    FULL_MODEL_LOAD_DIR= BASE_DIR + 'Detection/Models/'
+    FULL_MODEL_LOAD_DIR= BASE_DIR + 'Detection/recorded_models_and_meta/models/'
     SNAPSHOT_SAVE_DIR= BASE_DIR + 'Detection/Models/'
     META_SAVE_DIR = BASE_DIR + 'Detection/ModelsMeta/'
     TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_and_UW_80/'
+    #TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80_t0_copy/'
     TEST_OUTPUT_DIR = BASE_DIR + 'Detection/TestOutputs/'
     GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/all_uw_scenes.json'
     #PRETRAINED_MODELS_DIR= BASE_DIR + ''
@@ -26,53 +25,55 @@ class Config():
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
-    LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_GEN4UW_3'
-    SAVE_FREQ = 1
-    SAVE_BY_EPOCH = True  
+    LOAD_FULL_MODEL = False 
+    MODEL_BASE_SAVE_NAME = 'TDID_GEN4UW_15'
+    SAVE_FREQ = 5000
+    SAVE_BY_EPOCH = False 
     #BATCH_NORM= True
 
 
     #Training 
-    MAX_NUM_EPOCHS= 30
-    BATCH_SIZE= 4 
+    MAX_NUM_EPOCHS= 50
+    BATCH_SIZE = 4 
     LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
     NUM_WORKERS = 4
+    LOSS_MULT = 1
+    IMG_RESIZE = 0 
 
     #Target Images
     PRELOAD_TARGET_IMAGES= False
-    AUGMENT_TARGET_IMAGES= True
+    AUGMENT_TARGET_IMAGES= True 
     MIN_TARGET_SIZE = 32
 
     #Training Data
-    ID_MAP_FNAME= 'all_instance_id_map.txt'
+    ID_MAP_FNAME= 'hybrid_instance_id_map.txt'
     ID_TO_NAME = {}
     NAME_TO_ID = {}
-    OBJ_IDS_TO_EXCLUDE = [8,18,32,33]
+    OBJ_IDS_TO_EXCLUDE = [8,32,33,1050, 1052, 1053, 1054, 1055, 1270, 1143, 1243, 1244, 1245, 1247, 1252, 1255, 1256, 1257, 1004, 1005, 1007, 1140, 1142, 1271, 1272]
 
-    TRAIN_OBJ_IDS= [cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE]
+    TRAIN_OBJ_IDS= [cid for cid in range(1,2111) if cid not in OBJ_IDS_TO_EXCLUDE]
     FRACTION_OF_NO_BOX_IMAGES = .1 
     MAX_OBJ_DIFFICULTY= 4
     TRAIN_LIST= [
                  'Home_001_1',
-                 'Home_001_2',
+                # 'Home_001_2',
                  'Home_002_1',
-                 'Home_003_1',
-                 'Home_003_2',
+                'Home_003_1',
+                 #'Home_003_2',
                  'Home_004_1',
-                 'Home_004_2',
+                 #'Home_004_2',
                  'Home_005_1',
-                 'Home_005_2',
-                 'Home_006_1',
+                 #'Home_005_2',
+                'Home_006_1',
                  'Home_008_1',
                  'Home_014_1',
                  'Home_014_2',
                  'Office_001_1',
 
-                 'Home_101_1',
+                'Home_101_1',
                  'Home_102_1',
                  'Home_103_1',
                  'Home_104_1',
@@ -83,8 +84,10 @@ class Config():
                  'Home_109_1',
 
                 'Gen_010_2',
-
-
+                'Gen_010_2',
+                'Gen_010_5',
+                'Gen_010_6',
+                'Gen_010_6',
                 ]
 
     VAL_OBJ_IDS = [1050, 1052, 1053, 1054, 1055, 1270, 1143, 1243, 1244, 1245, 1247, 1252, 1255, 1256, 1257, 1004, 1005, 1007, 1140, 1142, 1271, 1272] 
@@ -101,8 +104,8 @@ class Config():
                 ]
 
     #VID dataset
-    USE_VID = False
-    VID_MAX_MIN_TARGET_SIZE = [200,16]
+    USE_VID = False 
+    VID_MAX_MIN_TARGET_SIZE = [80,50]
     VID_SUBSET = 'train_single' 
 
 
@@ -112,17 +115,23 @@ class Config():
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
 
-    TEST_OBJ_IDS= [cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE]
+    TEST_OBJ_IDS=VAL_OBJ_IDS 
     TEST_FRACTION_OF_NO_BOX_IMAGES = 1
     TEST_LIST = [ 
-                'Home_003_1',
+                 'Office_201_1',
+                 'Office_201_2',
+                 'Office_201_3',
                 ]
-
+    TEST_ONE_AT_A_TIME = True 
     ###############################################
     #Model paramters
-    ANCHOR_SCALES = [2,4,8]
+    ANCHOR_SCALES = [1,4,8]
     NUM_TARGETS = 2
-    
+    CORR_WITH_POOLED = True 
+    USE_IMG_FEATS = False
+    USE_DIFF_FEATS = True
+    USE_CC_FEATS = True
+
 
     PRE_NMS_TOP_N = 6000
     POST_NMS_TOP_N = 300

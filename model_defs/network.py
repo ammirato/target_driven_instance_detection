@@ -150,19 +150,19 @@ def clip_gradient(model, clip_norm):
 #    for name,p in model.named_parameters():
         if p.requires_grad:
             #print name
-#            try:
-            modulenorm = p.grad.data.norm()
-            totalnorm += modulenorm ** 2
-#            except:
-#                continue
+            try:
+                modulenorm = p.grad.data.norm()
+                totalnorm += modulenorm ** 2
+            except:
+                continue
     totalnorm = np.sqrt(totalnorm)
     norm = clip_norm / max(totalnorm, clip_norm)
     for p in model.parameters():
         if p.requires_grad:
-#            try:
-            p.grad.mul_(norm)
-#            except:
-#                continue
+            try:
+                p.grad.mul_(norm)
+            except:
+                continue
 
 
 

@@ -7,7 +7,7 @@ import numpy as np
 import importlib
 
 from instance_detection.model_defs import network
-from instance_detection.model_defs.TDID import TDID
+from instance_detection.model_defs.TDID_det4class import TDID
 from instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
 
 from instance_detection.utils.timer import Timer
@@ -33,25 +33,11 @@ def im_detect(net, target_data,im_data, im_info, features_given=True):
         boxes (ndarray): R x (4*K) array of predicted bounding boxes
     """
 
-    cls_prob, bbox_pred, rois = net(target_data, im_data, 
+    cls_prob = net(target_data, im_data, 
                                     features_given=features_given, im_info=im_info)
     scores = cls_prob.data.cpu().numpy()[0,:,:]
-    zs = np.zeros((scores.size, 1))
-    scores = np.concatenate((zs,scores),1)
-    #boxes = rois.data.cpu().numpy()[:, 1:5] / im_info[0][2]
-    boxes = rois.data.cpu().numpy()[0,:, :] #/ im_info[0][2]
 
-    if False:
-        # Apply bounding-box regression deltas
-        box_deltas = bbox_pred[0].data.cpu().numpy()
-        pred_boxes = bbox_transform_inv(boxes, box_deltas)
-        #pred_boxes = clip_boxes(pred_boxes, im_data.shape[1:])
-        pred_boxes = clip_boxes(pred_boxes, im_info)
-    else:
-        # Simply repeat the boxes, once for each class
-        pred_boxes = np.tile(boxes, (1, scores.shape[1]))
-
-    return scores, pred_boxes
+    return scores.max()
 
 
 def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids, cfg,
@@ -69,7 +55,7 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
     
     if output_dir is not None:
         det_file = os.path.join(output_dir, model_name+'.json')
-        print det_file
+        #print det_file
 
 
     #pre compute features for all targets
@@ -97,22 +83,32 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
 
 
 
-
+    num_correct = 0
+    num_total = 0
+    total_score = 0
+    total_run = 0
     #for i in range(num_images):
     for i,batch in enumerate(dataloader):
+        #if i>1000:
+        #    break;
         im_data= batch[0]
         im_info = im_data.shape[:]
-        #if cfg.TEST_IMG_RESIZE > 0:
-        im_data = cv2.resize(im_data,(0,0),fx=.75, fy=.75)
         im_data=normalize_image(im_data,cfg)
         im_data = network.np_to_variable(im_data, is_cuda=True)
         im_data = im_data.unsqueeze(0)
         im_data = im_data.permute(0, 3, 1, 2)
 
+        #print '{}/{}'.format(i, len(dataloader.dataset))
+
         #get image name and index
         img_name = batch[1][1]
         img_ind = int(img_name[:-4])
 
+        gt_id = batch[1][0][0][4]
+
+        max_score = 0
+        max_id = 0
+        tos = 0
         #get image features
         if not cfg.TEST_ONE_AT_A_TIME:
             img_features = net.features(im_data)
@@ -125,65 +121,34 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
             if cfg.TEST_ONE_AT_A_TIME:
                 target_data = target_data_dict[target_name]
                 _t['im_detect'].tic()
-                scores, boxes = im_detect(net, target_data, im_data, im_info,
+                score = im_detect(net, target_data, im_data, im_info,
                                           features_given=False)
                 detect_time = _t['im_detect'].toc(average=False)
             else:
                 target_features = target_features_dict[target_name]
                 _t['im_detect'].tic()
-                scores, boxes = im_detect(net, target_features, img_features, im_info)
+                score = im_detect(net, target_features, img_features, im_info)
                 detect_time = _t['im_detect'].toc(average=False)
 
             _t['misc'].tic()
 
-            boxes *= (1.0/.75)        
-
-            #get scores for foreground, non maximum supression
-            inds = np.where(scores[:, 1] > score_thresh)[0]
-            fg_scores = scores[inds, 1]
-            fg_boxes = boxes[inds, 1 * 4:(1 + 1) * 4]
-            #if cfg.TEST_IMG_RESIZE >0:
-            #    fg_boxes[:,:3] *= (1.0/cfg.TEST_IMG_RESIZE)
-            fg_dets = np.hstack((fg_boxes, fg_scores[:, np.newaxis])) \
-                .astype(np.float32, copy=False)
-            keep = nms(fg_dets, cfg.TEST_NMS_OVERLAP_THRESH)
-            fg_dets = fg_dets[keep, :]
-
-            # Limit to max_per_target detections *over all classes*
-            if max_dets_per_target > 0:
-                image_scores = np.hstack([fg_dets[:, -1]])
-                if len(image_scores) > max_dets_per_target:
-                    image_thresh = np.sort(image_scores)[-max_dets_per_target]
-                    keep = np.where(fg_dets[:, -1] >= image_thresh)[0]
-                    fg_dets = fg_dets[keep, :]
-            nms_time = _t['misc'].toc(average=False)
-
-            print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
-                .format(i + 1, num_images, detect_time, nms_time)
-
-            #put class id in the box
-            fg_dets = np.insert(fg_dets,4,t_id,axis=1)
-            #all_image_dets = np.vstack((all_image_dets,fg_dets))
-
-            for box in fg_dets:
-                cid = int(box[4])
-                xmin = int(box[0])
-                ymin = int(box[1])
-                width = int(box[2]-box[0] + 1)
-                height = int(box[3]-box[1] + 1)
-                score = float(box[5])
-                results.append({'image_id':img_ind, 'category_id':cid, 'bbox':[xmin,ymin,width,height    ], 'score':score})
+            total_score += score
+            total_run += 1
+            if score>max_score:
+                max_score = score
+                max_id = t_id    
+            if t_id == gt_id:
+                tos = score            
+        #print 'max:{} gt:{} tos:{} ms: {}'.format(max_id, gt_id,tos, max_score)
+        if max_id == gt_id:
+            num_correct += 1
+        num_total += 1
 
 
-
-        #record results by image name
-        #all_results[batch[1][1]] = all_image_dets.tolist()
-    if len(results) == 0:
-        results = [[]]
-    if output_dir is not None:
-        with open(det_file, 'w') as f:
-            json.dump(results,f)
-    return results
+    print num_correct
+    print num_total
+    print float(total_score)/float(total_run)
+    return float(num_correct)/float(num_total)
 
 
 
@@ -193,7 +158,7 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
 if __name__ == '__main__':
 
     #load config file
-    cfg_file = 'configAVD3' #NO EXTENSTION!
+    cfg_file = 'configGEN4UWC' #NO EXTENSTION!
     cfg = importlib.import_module('instance_detection.utils.configs.'+cfg_file)
     cfg = cfg.get_config()
 
@@ -207,6 +172,7 @@ if __name__ == '__main__':
 
     #make sure only targets that have ids, and have target images are chosen
     test_ids = check_object_ids(cfg.TEST_OBJ_IDS, cfg.ID_TO_NAME,target_images)
+    #print test_ids
     if test_ids==-1:
         print 'Invalid IDS!'
         sys.exit()
@@ -214,33 +180,47 @@ if __name__ == '__main__':
     testset = get_AVD_dataset(cfg.DATA_BASE_DIR,
                               cfg.TEST_LIST,
                               test_ids,
-                              max_difficulty=cfg.MAX_OBJ_DIFFICULTY,
-                              fraction_of_no_box=cfg.TEST_FRACTION_OF_NO_BOX_IMAGES)
+                              max_difficulty=6,#cfg.MAX_OBJ_DIFFICULTY,
+                              fraction_of_no_box=1)#cfg.TEST_FRACTION_OF_NO_BOX_IMAGES)
 
     #create train/test loaders, with CUSTOM COLLATE function
     testloader = torch.utils.data.DataLoader(testset,
                                               batch_size=1,
-                                              shuffle=True,
+                                              shuffle=False,
                                               num_workers=cfg.NUM_WORKERS,
                                               collate_fn=AVD.collate)
 
-    # load net
-    print('Loading ' + cfg.FULL_MODEL_LOAD_NAME + ' ...')
-    net = TDID(cfg)
-    network.load_net(cfg.FULL_MODEL_LOAD_DIR + cfg.FULL_MODEL_LOAD_NAME, net)
-    net.features.eval()#freeze batchnorms layers?
-    print('load model successfully!')
-    
-    net.cuda()
-    net.eval()
-    
-    # evaluation
-    test_net(cfg.MODEL_BASE_SAVE_NAME, net, testloader, cfg.ID_TO_NAME, 
-    	 target_images,test_ids,cfg, 
-    	 max_dets_per_target=cfg.MAX_DETS_PER_TARGET,
-    	 score_thresh=cfg.SCORE_THRESH, 
-    	 output_dir=cfg.TEST_OUTPUT_DIR)
+    load_names = [
+                'TDID_GEN4UWC_20_16_20000_230.62730_0.52458.h5',
+                'TDID_GEN4UWC_20_8_10000_291.84813_0.48088.h5',
+                'TDID_GEN4UWC_20_16_20000_230.62730_0.52458.h5', 
+#                'TDID_GEN4UWC_17_1_2800_971.88680_0.45155.h5', 
+#                'TDID_GEN4UWC_18_2_2300_693.64961_0.51149.h5',
+#                'TDID_GEN4UWC_18_3_3400_694.39169_0.44955.h5',
+#                'TDID_GEN4UWC_17_2_2900_863.00803_0.45954.h5',
+#                'TDID_GEN4UWC_15_1_1000_476.61535_0.45654.h5',
+#                'TDID_GEN4UWC_16_2_1700_345.35398_0.30070.h5',
+#                'TDID_GEN4UWC_15_2_1800_338.26621_0.38262.h5',
+                ]
+    for load_name in load_names:
 
+        # load net
+        #print('Loading ' + cfg.FULL_MODEL_LOAD_NAME + ' ...')
+        net = TDID(cfg)
+        network.load_net(cfg.FULL_MODEL_LOAD_DIR + load_name, net)
+        net.features.eval()#freeze batchnorms layers?
+        #print('load model successfully!')
+        
+        net.cuda()
+        net.eval()
+        
+        # evaluation
+        acc = test_net(cfg.MODEL_BASE_SAVE_NAME, net, testloader, cfg.ID_TO_NAME, 
+             target_images,test_ids,cfg, 
+             max_dets_per_target=cfg.MAX_DETS_PER_TARGET,
+             score_thresh=cfg.SCORE_THRESH, 
+             output_dir=cfg.TEST_OUTPUT_DIR)
 
+        print '{}  {}'.format(acc, load_name)
 
 

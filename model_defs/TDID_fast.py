@@ -7,6 +7,7 @@ import torchvision.models as models
 import cv2
 import numpy as np
 import sys
+import time
 
 from instance_detection.utils.timer import Timer
 from rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
@@ -46,6 +47,10 @@ class TDID(nn.Module):
         self.cross_entropy = None
         self.loss_box = None
 
+        self.timer = Timer()
+        self.time_info = {'img_features':0}
+        self.time = 0
+
     @property
     def loss(self):
         #return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
@@ -54,84 +59,54 @@ class TDID(nn.Module):
 
     def forward(self, target_data, im_data, gt_boxes=None, features_given=False, im_info=None, return_timing_info=False):
 
-        timer =  Timer()
-        time_info = {'img_features':0,
-                     'target_features':0,
-                     'embedding':0,
-                     'detection':0,
-                    }
 
-        if not features_given:
-            #get image features 
-            timer.tic()
-            img_features = self.features(im_data)
-            time_info['img_features'] = timer.toc(average=False)
-            timer.tic()
-            target_features = self.features(target_data)
-            time_info['target_features'] = timer.toc(average=False)
-        else:
+        #self.timer.tic()
+        self.time = time.clock() 
+        #get image features 
+        if features_given:
             img_features = im_data
-            target_features = target_data 
+            target_features = target_data
+        else:
+            img_features = self.features(im_data)
+            target_features = self.features(target_data)
 
-        timer.tic()
+        #featrues timing end
         padding = (max(0,int(target_features.size()[2]/2)), 
                          max(0,int(target_features.size()[3]/2)))
         ccs = []
         diffs = []
-        for b_ind in range(img_features.size()[0]):
-            img_ind = network.np_to_variable(np.asarray([b_ind]),
-                                                is_cuda=True, dtype=torch.LongTensor)
-            sample_img = torch.index_select(img_features,0,img_ind)
 
-            diff = []
-            cc = []
-            for t_ind in range(self.cfg.NUM_TARGETS):
-                target_ind = network.np_to_variable(np.asarray([b_ind*2+t_ind]),
-                                                    is_cuda=True, dtype=torch.LongTensor)
-                sample_target = torch.index_select(target_features,0,target_ind[0])
+        sample_img = img_features
+        diff = []
+        cc = []
+        sample_target1 = target_features[0,:,:,:].unsqueeze(0)
+        sample_target2 = target_features[1,:,:,:].unsqueeze(0)
 
-                sample_target = sample_target.view(-1,1,sample_target.size()[2], 
-                                                   sample_target.size()[3])
-                tf_pooled = F.max_pool2d(sample_target,(sample_target.size()[2],
-                                                           sample_target.size()[3]))
+        sample_target1 = sample_target1.permute((1,0,2,3)) 
+        sample_target2 = sample_target2.permute((1,0,2,3)) 
 
-                diff.append(sample_img - tf_pooled.permute(1,0,2,3).expand_as(sample_img))
-                if self.cfg.CORR_WITH_POOLED:
-                    cc.append(F.conv2d(sample_img,tf_pooled,groups=self.groups))
-                else:
-                    cc.append(F.conv2d(sample_img,sample_target,padding=padding,groups=self.groups))
-                
+        tf_pooled1 = F.max_pool2d(sample_target1,(sample_target1.size()[2],
+                                                   sample_target1.size()[3]))
+        tf_pooled2 = F.max_pool2d(sample_target2,(sample_target2.size()[2],
+                                                   sample_target2.size()[3]))
 
-            cc = torch.cat(cc,1)
-            cc = self.select_to_match_dimensions(cc,sample_img)
-            ccs.append(cc)
-            diffs.append(torch.cat(diff,1))
+        diff.append(sample_img - tf_pooled1.permute(1,0,2,3).expand_as(sample_img))
+        diff.append(sample_img - tf_pooled2.permute(1,0,2,3).expand_as(sample_img))
+        cc.append(F.conv2d(sample_img,tf_pooled1,groups=self.groups))
+        cc.append(F.conv2d(sample_img,tf_pooled2,groups=self.groups))
 
-        cc = torch.cat(ccs,0)
+        #pooll/diff/corr timing end
+
+        cc = torch.cat(cc,1)
+        diffs = torch.cat(diff,1)
+
         cc = self.cc_conv(cc)
-        diffs = torch.cat(diffs,0) 
         diffs = self.diff_conv(diffs)
-      
-        if self.cfg.USE_IMG_FEATS and self.cfg.USE_DIFF_FEATS:
-            if self.cfg.USE_CC_FEATS: 
-                cc = torch.cat([cc,img_features, diffs],1) 
-            else:
-                cc = torch.cat([img_features, diffs],1) 
-        elif self.cfg.USE_IMG_FEATS:
-            if self.cfg.USE_CC_FEATS: 
-                cc = torch.cat([cc,img_features,],1) 
-            else:
-                cc = torch.cat([img_features,],1) 
-        elif self.cfg.USE_DIFF_FEATS:
-            if self.cfg.USE_CC_FEATS: 
-                cc = torch.cat([cc,diffs],1) 
-            else:
-                cc = torch.cat([diffs],1) 
-        else:
-            cc = cc 
-        time_info['embedding'] = timer.toc(average=False)
-        timer.tic() 
+        cc = torch.cat([cc,diffs],1) 
         rpn_conv1 = self.conv1(cc)
+
+        #rpnconv timing end
+
  
         # rpn score
         rpn_cls_score = self.score_conv(rpn_conv1)
@@ -142,6 +117,9 @@ class TDID(nn.Module):
         # rpn boxes
         rpn_bbox_pred = self.bbox_conv(rpn_conv1)
 
+
+        #score/reg timgin end
+
         # proposal layer
         rois,scores, anchor_inds, labels = self.proposal_layer(rpn_cls_prob_reshape, 
                                                                rpn_bbox_pred,
@@ -151,24 +129,23 @@ class TDID(nn.Module):
                                                                self.anchor_scales,
                                                                gt_boxes)
     
-        # generating training labels and build the rpn loss
-        if self.training:
-            assert gt_boxes is not None
-            rpn_data = self.anchor_target_layer(rpn_cls_score,gt_boxes, 
-                                                im_info, self.cfg,
-                                                self._feat_stride, self.anchor_scales)
-            self.cross_entropy, self.loss_box = self.build_loss(rpn_cls_score_reshape, rpn_bbox_pred, rpn_data)
-            self.roi_cross_entropy = self.build_roi_loss(rpn_cls_score, rpn_cls_prob_reshape, scores,anchor_inds, labels)
+        #rois = network.np_to_variable(np.zeros((1,300,4)),is_cuda=False)
+        #scores = network.np_to_variable(np.zeros((1,300,1)),is_cuda=False)
+        #anchor_inds =network.np_to_variable(np.zeros((1,300,1)),is_cuda=False,dtype=torch.cuda.LongTensor) 
+        #labels = network.np_to_variable(np.zeros((1,300)),is_cuda=False,dtype=torch.cuda.LongTensor) 
+        #rois = np.zeros((1,300,4))
+        #scores = np.zeros((1,300,1))
+        #anchor_inds =np.zeros((1,300,1))
+        #labels = np.zeros((1,300)) 
+        #self.time_info['img_features'] = self.timer.toc(average=False)
+        self.time_info['img_features'] = time.clock() - self.time
+        #prop timing end
 
         #return target_features, features, rois, scores
-        bbox_pred = []
-        for il in range(len(rois)):
-            bbox_pred.append(network.np_to_variable(np.zeros((rois[il].size()[0],8))))
-        time_info['detection'] = timer.toc(average=False)
         if return_timing_info:
-            return scores, bbox_pred, rois, time_info
+            return scores.data.cpu().numpy(), rois.data.cpu().numpy(), self.time_info
         else:
-            return scores, bbox_pred, rois
+            return scores, rois
 
 
 
@@ -316,9 +293,6 @@ class TDID(nn.Module):
         elif net_name == 'resnet101':
             fnet = models.resnet101(pretrained=False)
             return torch.nn.Sequential(*list(fnet.children())[:-2]), 32, 2048 
-        elif net_name == 'alexnet':
-            fnet = models.alexnet(pretrained=False)
-            return  torch.nn.Sequential(*list(fnet.features.children())), 17, 256
         else:
             print 'feature net type not supported!'
             sys.exit() 
