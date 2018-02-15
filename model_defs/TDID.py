@@ -8,10 +8,8 @@ import cv2
 import numpy as np
 import sys
 
-from instance_detection.utils.timer import Timer
 from rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
 from rpn_msr.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
-#from rpn_msr.anchor_target_layer_HN import anchor_target_layer as anchor_target_layer_py
 
 import network
 from network import Conv2d, FC
@@ -29,8 +27,6 @@ class TDID(nn.Module):
                                     self.get_feature_net(cfg.FEATURE_NET_NAME)
 
         self.groups = self.num_feature_channels
-        #self.conv1 = Conv2d(3*self.num_feature_channels,
-        #                    512, 3, relu=False, same_padding=True)
         self.conv1 = self.get_conv1(cfg)
         self.cc_conv = Conv2d(cfg.NUM_TARGETS*self.num_feature_channels,
                               self.num_feature_channels, 3, 
@@ -48,32 +44,18 @@ class TDID(nn.Module):
 
     @property
     def loss(self):
-        #return self.roi_cross_entropy + self.cross_entropy + self.loss_box * 10
         return self.cross_entropy + self.loss_box * 10
-        #return self.roi_cross_entropy
 
-    def forward(self, target_data, im_data, gt_boxes=None, features_given=False, im_info=None, return_timing_info=False):
-
-        timer =  Timer()
-        time_info = {'img_features':0,
-                     'target_features':0,
-                     'embedding':0,
-                     'detection':0,
-                    }
+    def forward(self, target_data, im_data, gt_boxes=None, features_given=False, im_info=None):
 
         if not features_given:
             #get image features 
-            timer.tic()
             img_features = self.features(im_data)
-            time_info['img_features'] = timer.toc(average=False)
-            timer.tic()
             target_features = self.features(target_data)
-            time_info['target_features'] = timer.toc(average=False)
         else:
             img_features = im_data
             target_features = target_data 
 
-        timer.tic()
         padding = (max(0,int(target_features.size()[2]/2)), 
                          max(0,int(target_features.size()[3]/2)))
         ccs = []
@@ -129,17 +111,13 @@ class TDID(nn.Module):
                 cc = torch.cat([diffs],1) 
         else:
             cc = cc 
-        time_info['embedding'] = timer.toc(average=False)
-        timer.tic() 
+
         rpn_conv1 = self.conv1(cc)
- 
-        # rpn score
         rpn_cls_score = self.score_conv(rpn_conv1)
         rpn_cls_score_reshape = self.reshape_layer(rpn_cls_score, 2)
         rpn_cls_prob = F.softmax(rpn_cls_score_reshape)
         rpn_cls_prob_reshape = self.reshape_layer(rpn_cls_prob, len(self.anchor_scales)*3*2)
 
-        # rpn boxes
         rpn_bbox_pred = self.bbox_conv(rpn_conv1)
 
         # proposal layer
@@ -158,13 +136,11 @@ class TDID(nn.Module):
                                                 im_info, self.cfg,
                                                 self._feat_stride, self.anchor_scales)
             self.cross_entropy, self.loss_box = self.build_loss(rpn_cls_score_reshape, rpn_bbox_pred, rpn_data)
-            self.roi_cross_entropy = self.build_roi_loss(rpn_cls_score, rpn_cls_prob_reshape, scores,anchor_inds, labels)
 
         #return target_features, features, rois, scores
         bbox_pred = []
         for il in range(len(rois)):
             bbox_pred.append(network.np_to_variable(np.zeros((rois[il].size()[0],8))))
-        time_info['detection'] = timer.toc(average=False)
         if return_timing_info:
             return scores, bbox_pred, rois, time_info
         else:
@@ -193,25 +169,6 @@ class TDID(nn.Module):
         rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label, size_average=False)
         rpn_loss_box = F.smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets, size_average=False) / (fg_cnt + 1e-4)
         return rpn_cross_entropy, rpn_loss_box
-
-
-    def build_roi_loss(self, rpn_cls_score_reshape, rpn_cls_prob_reshape, scores, anchor_inds, labels):
-
-        batch_size = rpn_cls_score_reshape.size()[0]
-        rpn_cls_score = rpn_cls_score_reshape.permute(0, 2, 3, 1)#.contiguous().view(-1, 2)
-        bg_scores = torch.index_select(rpn_cls_score,3,network.np_to_variable(np.arange(0,9),is_cuda=True, dtype=torch.LongTensor))
-        fg_scores = torch.index_select(rpn_cls_score,3,network.np_to_variable(np.arange(9,18),is_cuda=True, dtype=torch.LongTensor))
-        bg_scores = bg_scores.contiguous().view(-1,1)
-        fg_scores = fg_scores.contiguous().view(-1,1)
-
-        rpn_cls_score = torch.cat([bg_scores, fg_scores],1)
-
-        rpn_cls_score = torch.index_select(rpn_cls_score, 0, anchor_inds.view(-1))
-        labels = labels.view(-1)
-
-        roi_cross_entropy = F.cross_entropy(rpn_cls_score, labels, size_average=False)
-
-        return roi_cross_entropy
 
 
     @staticmethod

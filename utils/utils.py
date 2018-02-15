@@ -269,7 +269,7 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
                        classification=False,
                       ):
     """
-    Returns a dataloader for the AVD dataset.
+    Returns a loader for the AVD dataset.
 
     dataset = get_AVD_dataset('/path/to/data', ['scene1','scene2,...], [chosen_ids])
 

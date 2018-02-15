@@ -38,18 +38,8 @@ def im_detect(net, target_data,im_data, im_info, features_given=True):
     scores = cls_prob.data.cpu().numpy()[0,:,:]
     zs = np.zeros((scores.size, 1))
     scores = np.concatenate((zs,scores),1)
-    #boxes = rois.data.cpu().numpy()[:, 1:5] / im_info[0][2]
-    boxes = rois.data.cpu().numpy()[0,:, :] #/ im_info[0][2]
-
-    if False:
-        # Apply bounding-box regression deltas
-        box_deltas = bbox_pred[0].data.cpu().numpy()
-        pred_boxes = bbox_transform_inv(boxes, box_deltas)
-        #pred_boxes = clip_boxes(pred_boxes, im_data.shape[1:])
-        pred_boxes = clip_boxes(pred_boxes, im_info)
-    else:
-        # Simply repeat the boxes, once for each class
-        pred_boxes = np.tile(boxes, (1, scores.shape[1]))
+    boxes = rois.data.cpu().numpy()[0,:, :]
+    pred_boxes = np.tile(boxes, (1, scores.shape[1]))
 
     return scores, pred_boxes
 
@@ -95,15 +85,11 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
         else:
             target_features_dict[target_name] = net.features(target_data)
 
-
-
-
-    #for i in range(num_images):
     for i,batch in enumerate(dataloader):
         im_data= batch[0]
         im_info = im_data.shape[:]
-        #if cfg.TEST_IMG_RESIZE > 0:
-        im_data = cv2.resize(im_data,(0,0),fx=.75, fy=.75)
+        if cfg.TEST_IMG_RESIZE > 0:
+            im_data = cv2.resize(im_data,(0,0),fx=cfg.TEST_IMG_RESIZE, fy=cfg.TEST_IMG_RESIZE)
         im_data=normalize_image(im_data,cfg)
         im_data = network.np_to_variable(im_data, is_cuda=True)
         im_data = im_data.unsqueeze(0)
@@ -136,14 +122,13 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
 
             _t['misc'].tic()
 
-            boxes *= (1.0/.75)        
+            if cfg.TEST_IMG_RESIZE > 0:
+                boxes *= (1.0/cfg.TEST_IMG_RESIZE)        
 
             #get scores for foreground, non maximum supression
             inds = np.where(scores[:, 1] > score_thresh)[0]
             fg_scores = scores[inds, 1]
             fg_boxes = boxes[inds, 1 * 4:(1 + 1) * 4]
-            #if cfg.TEST_IMG_RESIZE >0:
-            #    fg_boxes[:,:3] *= (1.0/cfg.TEST_IMG_RESIZE)
             fg_dets = np.hstack((fg_boxes, fg_scores[:, np.newaxis])) \
                 .astype(np.float32, copy=False)
             keep = nms(fg_dets, cfg.TEST_NMS_OVERLAP_THRESH)
@@ -163,7 +148,6 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
 
             #put class id in the box
             fg_dets = np.insert(fg_dets,4,t_id,axis=1)
-            #all_image_dets = np.vstack((all_image_dets,fg_dets))
 
             for box in fg_dets:
                 cid = int(box[4])
@@ -174,10 +158,6 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
                 score = float(box[5])
                 results.append({'image_id':img_ind, 'category_id':cid, 'bbox':[xmin,ymin,width,height    ], 'score':score})
 
-
-
-        #record results by image name
-        #all_results[batch[1][1]] = all_image_dets.tolist()
     if len(results) == 0:
         results = [[]]
     if output_dir is not None:

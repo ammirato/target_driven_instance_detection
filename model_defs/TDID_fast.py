@@ -12,7 +12,6 @@ import time
 from instance_detection.utils.timer import Timer
 from rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
 from rpn_msr.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
-#from rpn_msr.anchor_target_layer_HN import anchor_target_layer as anchor_target_layer_py
 
 import network
 from network import Conv2d, FC
@@ -30,8 +29,6 @@ class TDID(nn.Module):
                                     self.get_feature_net(cfg.FEATURE_NET_NAME)
 
         self.groups = self.num_feature_channels
-        #self.conv1 = Conv2d(3*self.num_feature_channels,
-        #                    512, 3, relu=False, same_padding=True)
         self.conv1 = self.get_conv1(cfg)
         self.cc_conv = Conv2d(cfg.NUM_TARGETS*self.num_feature_channels,
                               self.num_feature_channels, 3, 

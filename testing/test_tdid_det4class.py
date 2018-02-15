@@ -25,18 +25,15 @@ import json
 
 
 
-def im_detect(net, target_data,im_data, im_info, features_given=True):
-    """Detect object classes in an image given object proposals.
-    Returns:
-        scores (ndarray): R x K array of object class scores (K includes
-            background as object category 0)
-        boxes (ndarray): R x (4*K) array of predicted bounding boxes
+def im_classify(net, target_data,im_data, im_info, features_given=True):
+    """
+    Gives classifcation score for image/target pair 
+
     """
 
     cls_prob = net(target_data, im_data, 
-                                    features_given=features_given, im_info=im_info)
+                   features_given=features_given, im_info=im_info)
     scores = cls_prob.data.cpu().numpy()[0,:,:]
-
     return scores.max()
 
 
@@ -44,20 +41,12 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
              max_dets_per_target=5, score_thresh=0.1,
              output_dir=None,):
     """Test a TDID network on an image dataset."""
-    #list to output for coco evaluation
-    results = []
- 
     #num images in test set
     num_images = len(dataloader)
    
     # timers
     _t = {'im_detect': Timer(), 'misc': Timer()}
     
-    if output_dir is not None:
-        det_file = os.path.join(output_dir, model_name+'.json')
-        #print det_file
-
-
     #pre compute features for all targets
     target_features_dict = {}
     target_data_dict = {}
@@ -87,18 +76,13 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
     num_total = 0
     total_score = 0
     total_run = 0
-    #for i in range(num_images):
     for i,batch in enumerate(dataloader):
-        #if i>1000:
-        #    break;
         im_data= batch[0]
         im_info = im_data.shape[:]
         im_data=normalize_image(im_data,cfg)
         im_data = network.np_to_variable(im_data, is_cuda=True)
         im_data = im_data.unsqueeze(0)
         im_data = im_data.permute(0, 3, 1, 2)
-
-        #print '{}/{}'.format(i, len(dataloader.dataset))
 
         #get image name and index
         img_name = batch[1][1]
@@ -139,7 +123,6 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
                 max_id = t_id    
             if t_id == gt_id:
                 tos = score            
-        #print 'max:{} gt:{} tos:{} ms: {}'.format(max_id, gt_id,tos, max_score)
         if max_id == gt_id:
             num_correct += 1
         num_total += 1

@@ -14,7 +14,6 @@ from instance_detection.model_defs.TDID import TDID
 
 from instance_detection.utils.timer import Timer
 from instance_detection.utils.utils import *
-from instance_detection.utils.ILSVRC_VID_loader import VID_Loader
 
 from instance_detection.testing.test_tdid import test_net, im_detect
 from instance_detection.evaluation.COCO_eval.coco_det_eval import coco_det_eval 
@@ -22,12 +21,9 @@ from instance_detection.evaluation.COCO_eval.coco_det_eval import coco_det_eval
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
 # load config
-#cfg_file = 'configGMUsynth2AVD' #NO FILE EXTENSTION!
-#cfg_file = 'configAVD2' #NO FILE EXTENSTION!
 cfg_file = 'configGEN4UW' #NO FILE EXTENSTION!
 cfg = importlib.import_module('instance_detection.utils.configs.'+cfg_file)
 cfg = cfg.get_config()
-
 
 
 def validate_and_save(cfg,net,valset,target_images, epoch):
@@ -53,22 +49,8 @@ def validate_and_save(cfg,net,valset,target_images, epoch):
                              epoch, epoch_loss/epoch_step_cnt, m_ap))
     network.save_net(save_name, net)
     print('save model: {}'.format(save_name))
-
     net.train()
     net.features.eval() #freeze batch norm layers?
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ##prepare target images (gather paths to the images)
@@ -77,7 +59,7 @@ if cfg.PYTORCH_FEATURE_NET:
     target_images = get_target_images(cfg.TARGET_IMAGE_DIR,cfg.NAME_TO_ID.keys())
 else:
     print 'Must use pytorch pretrained model, others not supported'
-    #would need to add new normaliztion to get_target_images, and elsewhere
+    #would need to add new normaliztion to get_target_images, and utilts, etc 
 
 #make sure only targets that have ids, and have target images are chosen
 train_ids = check_object_ids(cfg.TRAIN_OBJ_IDS, cfg.ID_TO_NAME,target_images) 
@@ -106,11 +88,6 @@ trainloader = torch.utils.data.DataLoader(train_set,
                                           shuffle=True,
                                           num_workers=cfg.NUM_WORKERS,
                                           collate_fn=AVD.collate)
-if cfg.USE_VID:
-    vid_train_set = VID_Loader(cfg.VID_DATA_DIR,cfg.VID_SUBSET, 
-                           target_size=cfg.VID_MAX_MIN_TARGET_SIZE, 
-                           multiple_targets=True, 
-                           batch_size=cfg.BATCH_SIZE)
 
 print('Loading network...')
 net = TDID(cfg)
@@ -133,11 +110,10 @@ optimizer = torch.optim.SGD(params, lr=cfg.LEARNING_RATE,
                                     momentum=cfg.MOMENTUM, 
                                     weight_decay=cfg.WEIGHT_DECAY)
 
-#make sure dir for saving model checkpoints exists
 if not os.path.exists(cfg.SNAPSHOT_SAVE_DIR):
     os.mkdir(cfg.SNAPSHOT_SAVE_DIR)
 
-# things to keep track of during training training
+# things to keep track of during training
 train_loss = 0
 t = Timer()
 t.tic()
@@ -169,8 +145,6 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
             if cfg.IMG_RESIZE >0 and np.random.rand() < .5:
                 img_resized = True
                 im_data = cv2.resize(im_data,(0,0),fx=cfg.IMG_RESIZE,fy=cfg.IMG_RESIZE)
-            #if cfg.AUGMENT_SCENE_IMAGES and np.random.rand() < .5:
-            #    im_data = vary_image(im_data,crop_max=50,rotate_max=15,do_illum=False)
             im_data=normalize_image(im_data,cfg)
             gt_boxes = np.asarray(batch[1][sample_ind][0],dtype=np.float32) 
             if img_resized >0  and gt_boxes.shape[0] >0:
@@ -240,32 +214,6 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
         network.clip_gradient(net, 10.)
         optimizer.step()
 
-        if cfg.USE_VID:
-            temp_bs = cfg.BATCH_SIZE
-            cfg.BATCH_SIZE = 2    
-    
-            batch = vid_train_set[0]
-            gt_boxes = np.asarray(batch[1])
-            im_data = match_and_concat_images_list(batch[0])
-            im_data =  normalize_image(im_data,cfg)
-            target_data = match_and_concat_images_list(batch[2]) 
-            target_data = normalize_image(target_data,cfg)
-
-            im_info = im_data.shape[1:]
-            im_data = network.np_to_variable(im_data, is_cuda=True)
-            im_data = im_data.permute(0, 3, 1, 2)
-            target_data = network.np_to_variable(target_data, is_cuda=True)
-            target_data = target_data.permute(0, 3, 1, 2)
-
-            net(target_data, im_data, gt_boxes, im_info=im_info)
-            loss = net.loss
-            optimizer.zero_grad()
-            loss.backward()
-            network.clip_gradient(net, 10.)
-            optimizer.step()
-
-            cfg.BATCH_SIZE = temp_bs 
-
         #print out training info
         if step % cfg.DISPLAY_INTERVAL == 0:
             duration = t.toc(average=False)
@@ -278,11 +226,9 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
             print log_text
             print targets_cnt
 
-
         if (not cfg.SAVE_BY_EPOCH) and  total_iterations % cfg.SAVE_FREQ==0:
             validate_and_save(cfg,net,valset,target_images,epoch)
         
-
     ######################################################
     #epoch over
     if cfg.SAVE_BY_EPOCH and epoch % cfg.SAVE_FREQ == 0:

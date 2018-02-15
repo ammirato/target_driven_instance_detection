@@ -14,11 +14,7 @@ from .generate_anchors import generate_anchors
 from ..utils.cython_bbox import bbox_overlaps, bbox_intersections
 
 # TODO: make fast_rcnn irrelevant
-# >>>> obsolete, because it depends on sth outside of this project
-#from ..fast_rcnn.config import cfg
 from ..fast_rcnn.bbox_transform_batch import bbox_transform
-
-# <<<< obsolete
 
 DEBUG = False
 
