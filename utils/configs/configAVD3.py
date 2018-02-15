@@ -90,6 +90,7 @@ class Config():
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
+    TEST_IMG_RESIZE = 0
 
     TEST_OBJ_IDS= [cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE]
     TEST_FRACTION_OF_NO_BOX_IMAGES = 1

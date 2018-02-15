@@ -5,6 +5,6 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-from . import config
+#from . import config
 from . import nms_wrapper
 # from nms_wrapper import nms

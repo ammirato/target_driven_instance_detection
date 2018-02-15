@@ -88,14 +88,14 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, _feat_stri
     # im_info = bottom[2].data[0, :]
 
     if DEBUG:
-        print 'im_size: ({}, {})'.format(im_info[0], im_info[1])
-        print 'scale: {}'.format(im_info[2])
+        print( 'im_size: ({}, {})'.format(im_info[0], im_info[1]) )
+        print( 'scale: {}'.format(im_info[2]))
 
     # 1. Generate proposals from bbox deltas and shifted anchors
     height, width = scores.shape[-2:]
 
     if DEBUG:
-        print 'score map size: {}'.format(scores.shape)
+        print('score map size: {}'.format(scores.shape) )
 
     # Enumerate all shifts
     shift_x = np.arange(0, width) * _feat_stride
@@ -202,7 +202,6 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, _feat_stri
         assert(b_anchor_inds.shape[0] == b_scores.shape[0])
 
         if b_proposals.shape[0] == 0:
-            print 'NOOOOOOOOOOOOOOOOOOOO'
             b_proposals = np.zeros((1,4))
             b_scores = np.zeros((1,1))
             b_anchor_inds = np.zeros(1)

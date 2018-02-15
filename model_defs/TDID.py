@@ -8,8 +8,8 @@ import cv2
 import numpy as np
 import sys
 
-from rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
-from rpn_msr.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
+from instance_detection.model_defs.rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
+from instance_detection.model_defs.rpn_msr.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
 
 import network
 from network import Conv2d, FC
@@ -141,10 +141,7 @@ class TDID(nn.Module):
         bbox_pred = []
         for il in range(len(rois)):
             bbox_pred.append(network.np_to_variable(np.zeros((rois[il].size()[0],8))))
-        if return_timing_info:
-            return scores, bbox_pred, rois, time_info
-        else:
-            return scores, bbox_pred, rois
+        return scores, bbox_pred, rois
 
 
 
@@ -277,7 +274,7 @@ class TDID(nn.Module):
             fnet = models.alexnet(pretrained=False)
             return  torch.nn.Sequential(*list(fnet.features.children())), 17, 256
         else:
-            print 'feature net type not supported!'
+            print('feature net type not supported!')
             sys.exit() 
    
     def get_conv1(self,cfg):

@@ -4,8 +4,8 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ross Girshick
 # --------------------------------------------------------
-from . import cython_nms
+#from . import cython_nms
 from . import cython_bbox
 import blob
-import nms
+#import nms
 import timer

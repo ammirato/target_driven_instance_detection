@@ -13,10 +13,6 @@ from instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
 from instance_detection.utils.timer import Timer
 from instance_detection.utils.utils import * 
 
-
-from instance_detection.model_defs.fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
-from instance_detection.model_defs.fast_rcnn.config import cfg, cfg_from_file, get_output_dir
-
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
 #import matplotlib.pyplot as plt
