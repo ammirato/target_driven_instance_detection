@@ -119,12 +119,6 @@ ext_modules = [
         include_dirs=[numpy_include]
     ),
     Extension(
-        "utils.cython_nms",
-        ["utils/nms.pyx"],
-        extra_compile_args={'gcc': ["-Wno-cpp", "-Wno-unused-function"]},
-        include_dirs=[numpy_include]
-    ),
-    Extension(
         "nms.cpu_nms",
         ["nms/cpu_nms.pyx"],
         extra_compile_args={'gcc': ["-Wno-cpp", "-Wno-unused-function"]},
@@ -147,13 +141,6 @@ ext_modules = [
                                            "'-fPIC'"]},
               include_dirs=[numpy_include, CUDA['include']]
               ),
-    Extension(
-        'pycocotools._mask',
-        sources=['pycocotools/maskApi.c', 'pycocotools/_mask.pyx'],
-        include_dirs=[numpy_include, 'pycocotools'],
-        extra_compile_args={
-            'gcc': ['-Wno-cpp', '-Wno-unused-function', '-std=c99']},
-    ),
 ]
 
 setup(
