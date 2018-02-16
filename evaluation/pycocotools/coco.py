@@ -53,7 +53,7 @@ import numpy as np
 import copy
 import itertools
 #from . import mask as maskUtils
-from target_driven_instance_detection.evaluation.COCO_eval.pycocotools import mask as maskUtils
+from target_driven_instance_detection.evaluation.pycocotools import mask as maskUtils
 import os
 from collections import defaultdict
 import sys

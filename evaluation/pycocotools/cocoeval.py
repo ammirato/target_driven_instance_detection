@@ -5,7 +5,7 @@ import datetime
 import time
 from collections import defaultdict
 #from . import mask as maskUtils
-from target_driven_instance_detection.evaluation.COCO_eval.pycocotools import mask as maskUtils
+from target_driven_instance_detection.evaluation.pycocotools import mask as maskUtils
 import copy
 
 class COCOeval:

@@ -19,7 +19,7 @@ from target_driven_instance_detection.evaluation.coco_det_eval import coco_det_e
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
 # load config
-cfg_file = 'configGEN4UW' #NO FILE EXTENSTION!
+cfg_file = 'configTEST' #NO FILE EXTENSTION!
 cfg = importlib.import_module('target_driven_instance_detection.configs.'+cfg_file)
 cfg = cfg.get_config()
 
