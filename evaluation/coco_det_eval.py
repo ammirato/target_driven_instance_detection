@@ -1,13 +1,6 @@
-from target_driven_instance_detection.evaluation.pycocotools.coco import COCO
-from target_driven_instance_detection.evaluation.pycocotools.cocoeval import COCOeval
+from .cocoapi.PythonAPI.pycocotools.coco import COCO
+from .cocoapi.PythonAPI.pycocotools.cocoeval import COCOeval
 import numpy as np
-#import skimage.io as io
-#import pylab
-#pylab.rcParams['figure.figsize'] = (10.0, 8.0)
-
-
-
-
 
 
 def coco_det_eval(gt_path, det_path,
@@ -47,3 +40,5 @@ def coco_det_eval(gt_path, det_path,
     cocoEval.summarize()
 
     return cocoEval.stats[2]
+
+
