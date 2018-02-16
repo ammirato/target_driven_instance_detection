@@ -6,12 +6,12 @@ import cPickle
 import numpy as np
 import importlib
 
-from instance_detection.model_defs import network
-from instance_detection.model_defs.TDID import TDID
-from instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
+from target_driven_instance_detection.model_defs.TDID import TDID
+#from target_driven_instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
+from target_driven_instance_detection.model_defs.nms.nms_wrapper import nms
 
-from instance_detection.utils.timer import Timer
-from instance_detection.utils.utils import * 
+#from target_driven_instance_detection.utils.timer import Timer
+from target_driven_instance_detection.utils import * 
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
@@ -74,7 +74,7 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
             target_data.append(target_img)
 
         target_data = match_and_concat_images_list(target_data)
-        target_data = network.np_to_variable(target_data, is_cuda=True)
+        target_data = np_to_variable(target_data, is_cuda=True)
         target_data = target_data.permute(0, 3, 1, 2)
         if cfg.TEST_ONE_AT_A_TIME:
             target_data_dict[target_name] = target_data
@@ -87,7 +87,7 @@ def test_net(model_name, net, dataloader, id_to_name, target_images, chosen_ids,
         if cfg.TEST_IMG_RESIZE > 0:
             im_data = cv2.resize(im_data,(0,0),fx=cfg.TEST_IMG_RESIZE, fy=cfg.TEST_IMG_RESIZE)
         im_data=normalize_image(im_data,cfg)
-        im_data = network.np_to_variable(im_data, is_cuda=True)
+        im_data = np_to_variable(im_data, is_cuda=True)
         im_data = im_data.unsqueeze(0)
         im_data = im_data.permute(0, 3, 1, 2)
 
@@ -170,7 +170,7 @@ if __name__ == '__main__':
 
     #load config file
     cfg_file = 'configAVD3' #NO EXTENSTION!
-    cfg = importlib.import_module('instance_detection.utils.configs.'+cfg_file)
+    cfg = importlib.import_module('target_driven_instance_detection.configs.'+cfg_file)
     cfg = cfg.get_config()
 
     ##prepare target images (gather paths to the images)
@@ -203,7 +203,7 @@ if __name__ == '__main__':
     # load net
     print('Loading ' + cfg.FULL_MODEL_LOAD_NAME + ' ...')
     net = TDID(cfg)
-    network.load_net(cfg.FULL_MODEL_LOAD_DIR + cfg.FULL_MODEL_LOAD_NAME, net)
+    load_net(cfg.FULL_MODEL_LOAD_DIR + cfg.FULL_MODEL_LOAD_NAME, net)
     net.features.eval()#freeze batchnorms layers?
     print('load model successfully!')
     

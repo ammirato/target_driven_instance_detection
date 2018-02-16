@@ -1,5 +1,5 @@
-from instance_detection.evaluation.COCO_eval.pycocotools.coco import COCO
-from instance_detection.evaluation.COCO_eval.pycocotools.cocoeval import COCOeval
+from target_driven_instance_detection.evaluation.COCO_eval.pycocotools.coco import COCO
+from target_driven_instance_detection.evaluation.COCO_eval.pycocotools.cocoeval import COCOeval
 import numpy as np
 #import skimage.io as io
 #import pylab

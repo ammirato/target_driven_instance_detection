@@ -11,16 +11,13 @@ import yaml
 from .generate_anchors import generate_anchors
 
 # TODO: make fast_rcnn irrelevant
-# >>>> obsolete, because it depends on sth outside of this project
-from ..fast_rcnn.bbox_transform_batch import bbox_transform_inv, clip_boxes
-from ..fast_rcnn.nms_wrapper import nms
+from .bbox_transform import bbox_transform_inv, clip_boxes
+from ..nms.nms_wrapper import nms
 
 
 
-from ..utils.cython_bbox import bbox_overlaps, bbox_intersections
+from .cython_bbox import bbox_overlaps, bbox_intersections
 
-
-# <<<< obsolete
 
 
 DEBUG = False

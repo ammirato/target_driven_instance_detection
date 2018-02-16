@@ -4,6 +4,7 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ross Girshick
 # --------------------------------------------------------
+#edited by Phil Ammirato
 
 import numpy as np
 from sympy.physics.paulialgebra import delta

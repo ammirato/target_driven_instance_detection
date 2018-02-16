@@ -1,0 +1,8 @@
+numpy
+cython
+pytorch
+torchvision
+opencv-python
+sympy
+matplotlib  - for coco  remove?
+h5py

@@ -8,12 +8,12 @@ import cv2
 import numpy as np
 import sys
 
-from instance_detection.model_defs.rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
-from instance_detection.model_defs.rpn_msr.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
+from target_driven_instance_detection.model_defs.anchors.proposal_layer import proposal_layer as proposal_layer_py
+from target_driven_instance_detection.model_defs.anchors.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
 
-import network
-from network import Conv2d, FC
-
+#import network
+#from network import Conv2d, FC
+from target_driven_instance_detection.utils import *
 
 class TDID(nn.Module):
     groups=512
@@ -61,14 +61,14 @@ class TDID(nn.Module):
         ccs = []
         diffs = []
         for b_ind in range(img_features.size()[0]):
-            img_ind = network.np_to_variable(np.asarray([b_ind]),
+            img_ind = np_to_variable(np.asarray([b_ind]),
                                                 is_cuda=True, dtype=torch.LongTensor)
             sample_img = torch.index_select(img_features,0,img_ind)
 
             diff = []
             cc = []
             for t_ind in range(self.cfg.NUM_TARGETS):
-                target_ind = network.np_to_variable(np.asarray([b_ind*2+t_ind]),
+                target_ind = np_to_variable(np.asarray([b_ind*2+t_ind]),
                                                     is_cuda=True, dtype=torch.LongTensor)
                 sample_target = torch.index_select(target_features,0,target_ind[0])
 
@@ -140,7 +140,7 @@ class TDID(nn.Module):
         #return target_features, features, rois, scores
         bbox_pred = []
         for il in range(len(rois)):
-            bbox_pred.append(network.np_to_variable(np.zeros((rois[il].size()[0],8))))
+            bbox_pred.append(np_to_variable(np.zeros((rois[il].size()[0],8))))
         return scores, bbox_pred, rois
 
 
@@ -184,12 +184,12 @@ class TDID(nn.Module):
     def select_to_match_dimensions(a,b):
         if a.size()[2] > b.size()[2]:
             a = torch.index_select(a, 2, 
-                                  network.np_to_variable(np.arange(0,
+                                  np_to_variable(np.arange(0,
                                         b.size()[2]).astype(np.int32),
                                          is_cuda=True,dtype=torch.LongTensor))
         if a.size()[3] > b.size()[3]:
             a = torch.index_select(a, 3, 
-                                  network.np_to_variable(np.arange(0,
+                                  np_to_variable(np.arange(0,
                                     b.size()[3]).astype(np.int32),
                                           is_cuda=True,dtype=torch.LongTensor))
         return a 
@@ -208,13 +208,13 @@ class TDID(nn.Module):
                                                       _feat_stride=_feat_stride,
                                                       anchor_scales=anchor_scales,
                                                       gt_boxes=gt_boxes)
-        rois = network.np_to_variable(rois, is_cuda=True)
-        anchor_inds = network.np_to_variable(anchor_inds, is_cuda=True,
+        rois = np_to_variable(rois, is_cuda=True)
+        anchor_inds = np_to_variable(anchor_inds, is_cuda=True,
                                                  dtype=torch.LongTensor)
-        labels = network.np_to_variable(labels, is_cuda=True,
+        labels = np_to_variable(labels, is_cuda=True,
                                              dtype=torch.LongTensor)
         #just get fg scores, make bg scores 0 
-        scores = network.np_to_variable(scores, is_cuda=True)
+        scores = np_to_variable(scores, is_cuda=True)
         return rois, scores, anchor_inds, labels
 
 
@@ -244,15 +244,15 @@ class TDID(nn.Module):
             anchor_target_layer_py(rpn_cls_score, gt_boxes, im_info,
                                    cfg, _feat_stride, anchor_scales)
 
-        rpn_labels = network.np_to_variable(rpn_labels, is_cuda=True, dtype=torch.LongTensor)
-        rpn_bbox_targets = network.np_to_variable(rpn_bbox_targets, is_cuda=True)
-        rpn_bbox_inside_weights = network.np_to_variable(rpn_bbox_inside_weights, is_cuda=True)
-        rpn_bbox_outside_weights = network.np_to_variable(rpn_bbox_outside_weights, is_cuda=True)
+        rpn_labels = np_to_variable(rpn_labels, is_cuda=True, dtype=torch.LongTensor)
+        rpn_bbox_targets = np_to_variable(rpn_bbox_targets, is_cuda=True)
+        rpn_bbox_inside_weights = np_to_variable(rpn_bbox_inside_weights, is_cuda=True)
+        rpn_bbox_outside_weights = np_to_variable(rpn_bbox_outside_weights, is_cuda=True)
 
         return rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights
 
     def get_features(self, im_data):
-        im_data = network.np_to_variable(im_data, is_cuda=True)
+        im_data = np_to_variable(im_data, is_cuda=True)
         im_data = im_data.permute(0, 3, 1, 2)
         features = self.features(im_data)
 

@@ -26,17 +26,6 @@ def create_illumination_pattern(rows, cols, xCenter,yCenter,minI=.1,maxI=1,radiu
     return pattern
 
 
-
-illum_patterns = []
-for il in range(100):
-    xc,yc = np.random.choice(400,2)
-    illum_patterns.append(create_illumination_pattern(400,400,xc,yc))
-
-
-
-
-
-
 def get_target_images(target_path, target_names,preload_images=False, for_testing=False,
                       means=None, pytorch_normalize=False):
     """
@@ -118,10 +107,6 @@ def get_target_images(target_path, target_names,preload_images=False, for_testin
 
 
 
-
-
-
-
 def match_and_concat_images(img1, img2, min_size=None):
     """
     Returns both images stacked and padded with zeros
@@ -195,17 +180,13 @@ def vary_image(img, crop_max=5, rotate_max=30,blur_max=9, do_illum=True):
 
     #change illumination
     if do_illum:
-        pattern = illum_patterns[int(np.random.choice(len(illum_patterns),1))]
+        max_side = max(img.shape[:2])
+        xc,yc = np.random.choice(max_side,2)
+        pattern = create_illumination_pattern(max_side,max_side,xc,yc)
         pattern = pattern[0:img.shape[0],0:img.shape[1]]
         img = img* np.tile(np.expand_dims(pattern,2),(1,1,3)) 
 
-
-
     return img
-
-
-
-
 
 
 
@@ -345,5 +326,134 @@ def load_pretrained_weights(model_name):
         print 'model name {} not supported!'.format(model_name)
         sys.exit()
 
+
+
+
+
+# --------------------------------------------------------
+# Fast R-CNN
+# Copyright (c) 2015 Microsoft
+# Licensed under The MIT License [see LICENSE for details]
+# Written by Ross Girshick
+# --------------------------------------------------------
+
+import time
+
+class Timer(object):
+    """A simple timer."""
+    def __init__(self):
+        self.total_time = 0.
+        self.calls = 0 
+        self.start_time = 0.
+        self.diff = 0.
+        self.average_time = 0.
+
+    def tic(self):
+        # using time.time instead of time.clock because time time.clock
+        # does not normalize for multithreading
+        self.start_time = time.time()
+
+    def toc(self, average=True):
+        self.diff = time.time() - self.start_time
+        self.total_time += self.diff
+        self.calls += 1
+        self.average_time = self.total_time / self.calls
+        if average:
+            return self.average_time
+        else:
+            return self.diff
+
+
+
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+import numpy as np
+
+
+class Conv2d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, relu=True, same_padding=False, bn=False):
+        super(Conv2d, self).__init__()
+        padding = int((kernel_size - 1) / 2) if same_padding else 0
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=padding)
+        self.bn = nn.BatchNorm2d(out_channels, eps=0.001, momentum=0, affine=True) if bn else None
+        self.relu = nn.ReLU(inplace=True) if relu else None
+
+    def forward(self, x):
+        x = self.conv(x)
+        if self.bn is not None:
+            x = self.bn(x)
+        if self.relu is not None:
+            x = self.relu(x)
+        return x
+
+
+class FC(nn.Module):
+    def __init__(self, in_features, out_features, relu=True):
+        super(FC, self).__init__()
+        self.fc = nn.Linear(in_features, out_features)
+        self.relu = nn.ReLU(inplace=True) if relu else None
+
+    def forward(self, x):
+        x = self.fc(x)
+        if self.relu is not None:
+            x = self.relu(x)
+        return x
+
+
+def save_net(fname, net):
+    import h5py
+    h5f = h5py.File(fname, mode='w')
+    for k, v in net.state_dict().items():
+        h5f.create_dataset(k, data=v.cpu().numpy())
+
+
+def load_net(fname, net):
+    import h5py
+    h5f = h5py.File(fname, mode='r')
+    for k, v in net.state_dict().items():
+        param = torch.from_numpy(np.asarray(h5f[k]))
+        v.copy_(param)
+
+
+def np_to_variable(x, is_cuda=True, dtype=torch.FloatTensor):
+    v = Variable(torch.from_numpy(x).type(dtype))
+    if is_cuda:
+        v = v.cuda()
+    return v
+
+
+def weights_normal_init(model, dev=0.01):
+    if isinstance(model, list):
+        for m in model:
+            weights_normal_init(m, dev)
+    else:
+        for m in model.modules():
+            if isinstance(m, nn.Conv2d):
+                m.weight.data.normal_(0.0, dev)
+            elif isinstance(m, nn.Linear):
+                m.weight.data.normal_(0.0, dev)
+
+
+def clip_gradient(model, clip_norm):
+    """Computes a gradient clipping coefficient based on gradient norm."""
+    totalnorm = 0 
+    for p in model.parameters():
+#    for name,p in model.named_parameters():
+        if p.requires_grad:
+            #print name
+            try:
+                modulenorm = p.grad.data.norm()
+                totalnorm += modulenorm ** 2
+            except:
+                continue
+    totalnorm = np.sqrt(totalnorm)
+    norm = clip_norm / max(totalnorm, clip_norm)
+    for p in model.parameters():
+        if p.requires_grad:
+            try:
+                p.grad.mul_(norm)
+            except:
+                continue
 
 

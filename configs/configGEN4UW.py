@@ -1,4 +1,4 @@
-from instance_detection.utils.utils import *
+from target_driven_instance_detection.utils import *
 
 class Config():
     """

@@ -29,13 +29,13 @@ def locate_cuda():
     Returns a dict with keys 'home', 'nvcc', 'include', and 'lib64'
     and values giving the absolute path to each directory.
 
-    Starts by looking for the CUDAHOME env variable. If not found, everything
+    Starts by looking for the CUDA_HOME env variable. If not found, everything
     is based on finding 'nvcc' in the PATH.
     """
 
     # first check if the CUDAHOME env variable is in use
-    if 'CUDAHOME' in os.environ:
-        home = os.environ['CUDAHOME']
+    if 'CUDA_HOME' in os.environ:
+        home = os.environ['CUDA_HOME']
         nvcc = pjoin(home, 'bin', 'nvcc')
     else:
         # otherwise, search the PATH for NVCC
@@ -113,8 +113,8 @@ class custom_build_ext(build_ext):
 
 ext_modules = [
     Extension(
-        "utils.cython_bbox",
-        ["utils/bbox.pyx"],
+        "anchors.cython_bbox",
+        ["anchors/bbox.pyx"],
         extra_compile_args={'gcc': ["-Wno-cpp", "-Wno-unused-function"]},
         include_dirs=[numpy_include]
     ),
@@ -144,7 +144,7 @@ ext_modules = [
 ]
 
 setup(
-    name='fast_rcnn',
+    name='tdid',
     ext_modules=ext_modules,
     # inject our custom trigger
     cmdclass={'build_ext': custom_build_ext},
