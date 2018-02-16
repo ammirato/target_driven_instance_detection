@@ -5,18 +5,14 @@ import cv2
 import cPickle
 import numpy as np
 import importlib
+import json
 
-from target_driven_instance_detection.model_defs.TDID import TDID
-#from target_driven_instance_detection.model_defs.fast_rcnn.nms_wrapper import nms
-from target_driven_instance_detection.model_defs.nms.nms_wrapper import nms
-
-#from target_driven_instance_detection.utils.timer import Timer
-from target_driven_instance_detection.utils import * 
+from model_defs.TDID import TDID
+from model_defs.nms.nms_wrapper import nms
+from utils import * 
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
-#import matplotlib.pyplot as plt
-import json
 
 
 
@@ -170,7 +166,7 @@ if __name__ == '__main__':
 
     #load config file
     cfg_file = 'configAVD3' #NO EXTENSTION!
-    cfg = importlib.import_module('target_driven_instance_detection.configs.'+cfg_file)
+    cfg = importlib.import_module('configs.'+cfg_file)
     cfg = cfg.get_config()
 
     ##prepare target images (gather paths to the images)

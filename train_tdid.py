@@ -9,18 +9,17 @@ from datetime import datetime
 import cv2
 import time
 
-from target_driven_instance_detection.model_defs.TDID import TDID 
-
-from target_driven_instance_detection.utils import *
-
-from target_driven_instance_detection.testing.test_tdid import test_net, im_detect
-from target_driven_instance_detection.evaluation.coco_det_eval import coco_det_eval 
+from model_defs.TDID import TDID 
+from utils import *
+from testing.test_tdid import test_net, im_detect
+from evaluation.coco_det_eval import coco_det_eval 
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
 # load config
 cfg_file = 'configTEST' #NO FILE EXTENSTION!
-cfg = importlib.import_module('target_driven_instance_detection.configs.'+cfg_file)
+#cfg = importlib.import_module('target_driven_instance_detection.configs.'+cfg_file)
+cfg = importlib.import_module('configs.'+cfg_file)
 cfg = cfg.get_config()
 
 

@@ -9,21 +9,17 @@ from datetime import datetime
 import cv2
 import time
 
-from instance_detection.model_defs import network
-from instance_detection.model_defs.TDID_det4class import TDID 
+from model_defs.TDID_det4class import TDID 
 
-from instance_detection.utils.timer import Timer
-from instance_detection.utils.utils import *
-
-from instance_detection.testing.test_tdid_det4class import test_net, im_detect
-from instance_detection.evaluation.COCO_eval.coco_det_eval import coco_det_eval 
+from utils import *
+from testing.test_tdid_det4class import test_net
+from evaluation.coco_det_eval import coco_det_eval 
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
 # load config
-#cfg_file = 'configDET4UWC' #NO FILE EXTENSTION!
 cfg_file = 'configGEN4UWC' #NO FILE EXTENSTION!
-cfg = importlib.import_module('instance_detection.utils.configs.'+cfg_file)
+cfg = importlib.import_module('configs.'+cfg_file)
 cfg = cfg.get_config()
 
 
@@ -46,7 +42,7 @@ def validate_and_save(cfg,net,valset,target_images, epoch, iters):
                              (cfg.MODEL_BASE_SAVE_NAME+
                               '_{}_{}_{:1.5f}_{:1.5f}.h5').format(
                              epoch,iters, epoch_loss/epoch_step_cnt, acc))
-    network.save_net(save_name, net)
+    save_net(save_name, net)
     print('save model: {}'.format(save_name))
 
     net.train()
@@ -93,9 +89,9 @@ print('Loading network...')
 net = TDID(cfg)
 if cfg.LOAD_FULL_MODEL:
     #load a previously trained model
-    network.load_net(cfg.FULL_MODEL_LOAD_DIR + cfg.FULL_MODEL_LOAD_NAME, net)
+    load_net(cfg.FULL_MODEL_LOAD_DIR + cfg.FULL_MODEL_LOAD_NAME, net)
 else:
-    network.weights_normal_init(net, dev=0.01)
+    weights_normal_init(net, dev=0.01)
     if cfg.USE_PRETRAINED_WEIGHTS:
         net.features = load_pretrained_weights(cfg.FEATURE_NET_NAME) 
 net.features.eval()#freeze batchnorms layers?
@@ -202,9 +198,9 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
         gt_boxes = np.asarray(batch_gt_boxes) 
 
         im_info = im_data.shape[1:]
-        im_data = network.np_to_variable(im_data, is_cuda=True)
+        im_data = np_to_variable(im_data, is_cuda=True)
         im_data = im_data.permute(0, 3, 1, 2)
-        target_data = network.np_to_variable(target_data, is_cuda=True)
+        target_data = np_to_variable(target_data, is_cuda=True)
         target_data = target_data.permute(0, 3, 1, 2)
 
         # forward
@@ -218,7 +214,7 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
         # backprop and parameter update
         optimizer.zero_grad()
         loss.backward()
-        network.clip_gradient(net, 10.)
+        clip_gradient(net, 10.)
         optimizer.step()
 
         #print out training info

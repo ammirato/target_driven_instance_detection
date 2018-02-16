@@ -11,8 +11,6 @@ import sys
 from target_driven_instance_detection.model_defs.anchors.proposal_layer import proposal_layer as proposal_layer_py
 from target_driven_instance_detection.model_defs.anchors.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
 
-#import network
-#from network import Conv2d, FC
 from target_driven_instance_detection.utils import *
 
 class TDID(nn.Module):

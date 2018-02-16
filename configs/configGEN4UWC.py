@@ -1,4 +1,4 @@
-from instance_detection.utils.utils import *
+from utils import *
 
 class Config():
     """
@@ -30,7 +30,7 @@ class Config():
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_GEN4UWC_20'
+    MODEL_BASE_SAVE_NAME = 'TDID_GEN4UWC_TEST'
     SAVE_FREQ = 10000 
     SAVE_BY_EPOCH = False 
     #BATCH_NORM= True
