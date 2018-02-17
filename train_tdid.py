@@ -11,7 +11,7 @@ import time
 
 from model_defs.TDID import TDID 
 from utils import *
-from testing.test_tdid import test_net, im_detect
+from test_tdid import test_net
 from evaluation.coco_det_eval import coco_det_eval 
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
