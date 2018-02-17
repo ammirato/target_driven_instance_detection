@@ -6,8 +6,11 @@ This is an implementation of the technique described in "Target Driven Instance 
 ## External Requirements
 *Python 2 (might work with Python 3)
 *[PyTorch](http://pytorch.org/)
+*AVD THINGS
 
 ## Installation
+***ADD SOMETHING FOR AVD CODE***
+
 0. Make sure you have Pytorch (and torchvision)
 
 1. Get the code

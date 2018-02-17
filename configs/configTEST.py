@@ -40,12 +40,13 @@ class Config():
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
     NUM_WORKERS = 8 
-    LOSS_MULT = 1
-    IMG_RESIZE = .75 
+    RESIZE_IMG = .5 
+    RESIZE_IMG_FACTOR = .75
+    CHOOSE_PRESENT_TARGET = .6
 
     #Target Images
     PRELOAD_TARGET_IMAGES= False
-    AUGMENT_TARGET_IMAGES= True 
+    AUGMENT_TARGET_IMAGES= .9 
     MIN_TARGET_SIZE = 32
 
     #Training Data
@@ -69,7 +70,7 @@ class Config():
 
     ##############################################
     #Testing
-    TEST_IMG_RESIZE = 0 
+    TEST_RESIZE_IMG_FACTOR =  .75 
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7

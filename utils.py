@@ -156,7 +156,7 @@ def match_and_concat_images_list(img_list, min_size=None):
 
 
 
-def vary_image(img, crop_max=5, rotate_max=30,blur_max=9, do_illum=True):
+def augment_image(img, crop_max=5, rotate_max=30,blur_max=9, do_illum=True):
 
     #crop
     crops = np.random.choice(crop_max,4)   
@@ -288,11 +288,11 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
 
 
 
-def write_training_meta(cfg,net):
+def save_training_meta_data(cfg,net):
     """
     Writes a text file that describes model and paramters.
     
-    ex) write_training_meta(cfg,net)
+    ex) save_training_meta_data(cfg,net)
     """
     meta_fid = open(os.path.join(cfg.META_SAVE_DIR, cfg.MODEL_BASE_SAVE_NAME + '.txt'),'w')
    
