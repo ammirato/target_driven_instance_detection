@@ -17,24 +17,41 @@ from .cython_bbox import bbox_overlaps, bbox_intersections
 
 
 
-def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=[16, ],
+def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=16,
                    anchor_scales=[2, 4, 8],gt_boxes=None):
     ''' 
     Outputs object detection proposals
 
     Applys estimated bounding-box transformations to a set of
     regular boxes (called "anchors").
+
+    fg = foreground (the target object)
+    bg = background (not the target)
+
     
     Input parameters:
 
-        class_prob_reshape:
-        bbox_pred: 
-        img_info: 
-        _feat_stride: 
-        anchor_scales: 
+        class_prob_reshape: (ndarray)
+        bbox_pred:  (ndarray)
+        img_info:  (tuple of int)
+        cfg: (Config)
+
+        _feat_stride(optional): (int) scaling factor between input feature
+                                map (class_prob_reshape) and original image.
+                                Default: 16 
+        anchor_scales (optional):  (list of int) scale for size of anchor boxes
+                                   Default: [2,4,8]
+        gt_boxes (optional): (ndarray) If not None, return value all_labels
+                             will have fg/bg label of each anchor box. If None
+                             all_labels will be meaningless. Default: None
 
     Returns:
-        rois:
+        all_proposals: (ndarray) The proposed bounding boxes
+        all_scores: (ndarray) The fg/bg score for each bounding box
+        all_anchor_inds: (ndarray) The index of the anchor box that 
+                         corresponds to the proposed bounding box
+        all_labels: (ndarray) ground truth fg/bg label for each proposed 
+                    bounding box. 
 
     # Algorithm:
     #
@@ -44,22 +61,16 @@ def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=[1
     # clip predicted boxes to image
     # remove predicted boxes with either height or width < threshold
     # sort all (proposal, score) pairs by score from highest to lowest
-    # take top pre_nms_topN proposals before NMS
+    # take top cfg.PRE_NMS_TOP_N proposals before NMS
     # apply NMS with threshold 0.7 to remaining proposals
     # take after_nms_topN proposals after NMS
     # return the top proposals (-> RoIs top, scores top)
-    #layer_params = yaml.load(self.param_str_)
 
     ''' 
 
     batch_size = class_prob_reshape.shape[0]
     _anchors = generate_anchors(scales=np.array(anchor_scales))
     _num_anchors = _anchors.shape[0]
-
-    pre_nms_topN = cfg.PRE_NMS_TOP_N
-    post_nms_topN = cfg.POST_NMS_TOP_N
-    nms_thresh = cfg.NMS_THRESH
-    min_size = cfg.PROPOSAL_MIN_BOX_SIZE
 
     # the first set of _num_anchors channels are bg probs
     # the second set are the fg probs, which we want
@@ -103,7 +114,6 @@ def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=[1
     # scores are (1, A, H, W) format
     # transpose to (1, H, W, A)
     # reshape to (1 * H * W * A, 1) where rows are ordered by (h, w, a)
-    #scores = scores.transpose((0, 2, 3, 1)).reshape((batch_size,-1, 1))
     scores = scores.transpose((0, 2, 3, 1)).reshape((batch_size,-1))
 
     # Convert anchors into proposals via bbox transformations
@@ -111,25 +121,19 @@ def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=[1
 
     # 2. clip predicted boxes to image
     proposals = clip_boxes(proposals, img_info[:2])
-    #orig_props = proposals
-
-    prop_info = []
-
 
     # 3. remove predicted boxes with either height or width < threshold
     # (NOTE: convert min_size to input image scale stored in img_info[2])
-    lose = _filter_boxes(proposals, min_size * img_info[2])
+    lose = _filter_boxes(proposals, cfg.PROPOSAL_MIN_BOX_SIZE * img_info[2])
     proposals[lose[0],lose[1],:] = 0
     scores[lose[0],lose[1]] = 0
 
-    # # remove irregular boxes, too fat too tall
-
     # 4. sort all (proposal, score) pairs by score from highest to lowest
-    # 5. take top pre_nms_topN (e.g. 6000)
+    # 5. take top cfg.PRE_NMS_TOP_N (e.g. 6000)
     order = scores.argsort(1)[:,::-1]
     anchor_inds = np.tile(np.arange(order.shape[1]),(batch_size,1))
-    if pre_nms_topN > 0:
-        order = order[:,:pre_nms_topN]
+    if cfg.PRE_NMS_TOP_N > 0:
+        order = order[:,:cfg.PRE_NMS_TOP_N]
     b_select = np.arange(batch_size)
     proposals = np.take(proposals,order,axis=1)[b_select,b_select,:,:]
     scores = np.take(scores,order,axis=1)[b_select,b_select,:]
@@ -150,9 +154,9 @@ def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=[1
         # 6. apply nms (e.g. threshold = 0.7)
         # 7. take after_nms_topN (e.g. 300)
         # 8. return the top proposals (-> RoIs top)
-        keep = nms(np.hstack((b_proposals, b_scores)), nms_thresh)
-        if post_nms_topN > 0:
-            keep = keep[:post_nms_topN]
+        keep = nms(np.hstack((b_proposals, b_scores)), cfg.NMS_THRESH)
+        if cfg.POST_NMS_TOP_N > 0:
+            keep = keep[:cfg.POST_NMS_TOP_N]
 
         b_proposals = b_proposals[keep, :]
         b_scores = b_scores[keep]
@@ -165,14 +169,10 @@ def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=[1
             b_scores = np.zeros((1,1))
             b_anchor_inds = np.zeros(1)
 
-
         #match anchor inds with gt boxes
         b_labels = -1*np.ones(b_anchor_inds.size)
-
         if gt_boxes is not None:
-            
             b_labels.fill(0)
-
              #get rid of background gt_boxes
             gt_box = np.expand_dims(gt_boxes[batch_ind,:],axis=0)
             if gt_box[0,-1] == 0:#this is a bg box
@@ -203,6 +203,8 @@ def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=[1
                 if True:#cfg.TRAIN.PROPOSAL_CLOBBER_POSITIVES:
                     # assign bg labels last so that negative labels can clobber positives
                     b_labels[max_overlaps < .2] = 0 
+
+        #finshed with one batch, update data structs
         if all_proposals is None:
             all_proposals = np.expand_dims(b_proposals, axis=0)
             all_scores = np.expand_dims(b_scores, axis=0)
@@ -214,10 +216,7 @@ def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=[1
             all_anchor_inds = _append_and_pad(all_anchor_inds,b_anchor_inds)
             all_labels = _append_and_pad(all_labels,b_labels)
 
-
-
     return all_proposals, all_scores,all_anchor_inds,all_labels 
-
 
 
 def _append_and_pad(all_batches, single_batch):

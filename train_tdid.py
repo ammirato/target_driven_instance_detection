@@ -11,7 +11,7 @@ import time
 
 from model_defs.TDID import TDID 
 from utils import *
-from test_tdid import test_net
+#from test_tdid import test_net
 from evaluation.coco_det_eval import coco_det_eval 
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
@@ -20,6 +20,11 @@ import active_vision_dataset_processing.data_loading.active_vision_dataset_pytor
 cfg_file = 'configTEST' #NO FILE EXTENSTION!
 cfg = importlib.import_module('configs.'+cfg_file)
 cfg = cfg.get_config()
+
+if cfg.DET4CLASS:
+    test_net = importlib.import_module('test_tdid_det4class').test_net
+else:
+    test_net = importlib.import_module('test_tdid').test_net
 
 
 def validate_and_save(cfg,net,valset,target_images, epoch, total_iterations):
@@ -198,7 +203,10 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
 
         # forward
         net(target_data, im_data, im_info, gt_boxes=gt_boxes)
-        loss = net.loss
+        if cfg.USE_ROI_LOSS_ONLY:
+            loss = net.roi_cross_entropy_loss
+        else:
+            loss = net.loss
 
         train_loss += loss.data[0]
         epoch_step_cnt += 1

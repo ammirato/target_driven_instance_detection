@@ -7,7 +7,7 @@ import numpy as np
 import importlib
 import json
 
-from model_defs.TDID_det4class import TDID
+from model_defs.TDID import TDID
 from model_defs.nms.nms_wrapper import nms
 from utils import * 
 from model_defs.anchors.bbox_transform import bbox_transform_inv, clip_boxes

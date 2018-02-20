@@ -44,7 +44,17 @@ python train_tdid.py
 
 
 
-
+####TODO
+1. Make ```proposal_layer``` and  ```anchor_target_layer``` cleaner, easier to understand, etc. 
+2. is regression target on dummy gt box?
+3. Hard negative mining on proposed boxes?
+4. Add to README for AVD code
+5. Add to README for extra data (target images, synthetic data)
+6. Fix eval by object
 
 ####Acknowledgements
 longcw code
+
+
+
+

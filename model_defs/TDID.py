@@ -44,6 +44,7 @@ class TDID(torch.nn.Module):
         # loss
         self.class_cross_entropy_loss = None
         self.box_regression_loss = None
+        self.roi_cross_entropy_loss = None
 
     @property
     def loss(self):
@@ -161,20 +162,26 @@ class TDID(torch.nn.Module):
         bbox_pred = self.bbox_conv(embedding_feats)
 
         # proposal layer
-        rois, scores, anchor_inds, labels = self.proposal_layer(class_prob_reshape, 
-                                                               bbox_pred,
-                                                               img_info,
-                                                               self.cfg,
-                                                               self._feat_stride, 
-                                                               self.anchor_scales,
-                                                               gt_boxes)
+        rois, scores, anchor_inds, labels = self.proposal_layer(
+                                                           class_prob_reshape,
+                                                           bbox_pred,
+                                                           img_info,
+                                                           self.cfg,
+                                                           self._feat_stride, 
+                                                           self.anchor_scales,
+                                                           gt_boxes)
     
         if self.training:
             assert gt_boxes is not None
             anchor_data = self.anchor_target_layer(class_score,gt_boxes, 
                                                 img_info, self.cfg,
-                                                self._feat_stride, self.anchor_scales)
-            self.cross_entropy, self.loss_box = self.build_loss(class_prob_reshape, bbox_pred, anchor_data)
+                                                self._feat_stride, 
+                                                self.anchor_scales)
+            self.class_cross_entropy_loss, self.box_regression_loss = \
+                    self.build_loss(class_prob_reshape, bbox_pred, anchor_data)
+
+            self.roi_cross_entropy_loss = self.build_roi_loss(class_score, 
+                                                    scores,anchor_inds, labels)
 
         return scores, rois
 
@@ -214,6 +221,33 @@ class TDID(torch.nn.Module):
         cross_entropy = F.cross_entropy(class_score,anchor_label, size_average=False)
         loss_box = F.smooth_l1_loss(bbox_pred, bbox_targets, size_average=False) / (fg_cnt + 1e-4)
         return cross_entropy, loss_box
+
+
+    def build_roi_loss(self, class_score, scores, anchor_inds, labels):
+        '''
+        Compute classifcation loss of specified anchor boxes
+
+        Input paramters:
+
+
+        Returns:
+            
+        '''
+
+        class_score = classs_score.permute(0, 2, 3, 1)
+        bg_scores = torch.index_select(class_score,3,np_to_variable(np.arange(0,9),is_cuda=True, dtype=torch.LongTensor))
+        fg_scores = torch.index_select(class_score,3,np_to_variable(np.arange(9,18),is_cuda=True, dtype=torch.LongTensor))
+        bg_scores = bg_scores.contiguous().view(-1,1)
+        fg_scores = fg_scores.contiguous().view(-1,1)
+        class_score = torch.cat([bg_scores, fg_scores],1)
+        class_score = torch.index_select(class_score, 0, anchor_inds.view(-1))
+
+        labels = labels.view(-1)
+        roi_cross_entropy = F.cross_entropy(class_score, labels, size_average=False)
+        return roi_cross_entropy
+
+
+
 
 
     @staticmethod
@@ -309,14 +343,14 @@ class TDID(torch.nn.Module):
 
 
     @staticmethod
-    def anchor_target_layer(cls_score, gt_boxes, img_info,
+    def anchor_target_layer(class_score, gt_boxes, img_info,
                             cfg, _feat_stride, anchor_scales):
         ''' 
         Assigns fg/bg label to anchor boxes.      
 
 
         Input parameters:
-            cls_score:  (torch.autograd.variable.Variable)
+            class_score:  (torch.autograd.variable.Variable)
             gt_boxes:  (ndarray)
             img_info:  (tuple of int)
             cfg: (Config) from ../configs
@@ -329,9 +363,9 @@ class TDID(torch.nn.Module):
             bbox_inside_weights:(torch.autograd.variable.Variable)
             bbox_outside_weights:(torch.autograd.variable.Variable)
         ''' 
-        cls_score = cls_score.data.cpu().numpy()
+        class_score = class_score.data.cpu().numpy()
         labels, bbox_targets, bbox_inside_weights, bbox_outside_weights = \
-            anchor_target_layer_py(cls_score, gt_boxes, img_info,
+            anchor_target_layer_py(class_score, gt_boxes, img_info,
                                    cfg, _feat_stride, anchor_scales)
 
         labels = np_to_variable(labels, is_cuda=True, dtype=torch.LongTensor)

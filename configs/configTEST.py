@@ -34,7 +34,7 @@ class Config():
 
     #Training 
     MAX_NUM_EPOCHS= 2 
-    BATCH_SIZE = 4 
+    BATCH_SIZE = 2 
     LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
@@ -43,6 +43,8 @@ class Config():
     RESIZE_IMG = .5 
     RESIZE_IMG_FACTOR = .75
     CHOOSE_PRESENT_TARGET = .6
+    DET4CLASS = False 
+    USE_ROI_LOSS_ONLY = False 
 
     #Target Images
     PRELOAD_TARGET_IMAGES= False

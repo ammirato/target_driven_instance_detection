@@ -15,27 +15,29 @@ from .generate_anchors import generate_anchors
 from .cython_bbox import bbox_overlaps, bbox_intersections
 from .bbox_transform import bbox_transform
 
-def anchor_target_layer(cls_score, gt_boxes, im_info, cfg, _feat_stride=[16, ],
-                        anchor_scales=[4, 8, 16, 32]):
+def anchor_target_layer(cls_score, gt_boxes, img_info, cfg, _feat_stride=16,
+                        anchor_scales=[2, 4, 8,]):
     ''' 
-    Assign anchors to ground-truth targets. Produces anchor classification
-    labels and bounding-box regression targets.
-    Parameters
-    ----------
-    cls_score: for pytorch (1, Ax2, H, W) bg/fg scores of previous conv layer
-    gt_boxes: (G, 5) vstack of [x1, y1, x2, y2, class]
-    im_info: a list of [image_height, image_width, scale_ratios]
-    _feat_stride: the downsampling ratio of feature map to the original input image
-    anchor_scales: the scales to the basic_anchor (basic anchor is [16, 16])
-    ----------
-    Returns
-    ----------
-    labels : (HxWxA, 1), for each anchor, 0 denotes bg, 1 fg, -1 dontcare
-    bbox_targets: (HxWxA, 4), distances of the anchors to the gt_boxes(may contains some transform)
-                            that are the regression objectives
-    bbox_inside_weights: (HxWxA, 4) weights of each boxes, mainly accepts hyper param in cfg
-    bbox_outside_weights: (HxWxA, 4) used to balance the fg/bg,
-                            beacuse the numbers of bgs and fgs mays significiantly different
+    Produces anchor classification labels and bounding-box regression targets.
+    
+    Input parameters:
+        cls_score:  (ndarray) network output score map
+        gt_boxes: (ndarray) ground truth bounding boxes
+        img_info:  (tuple of int)
+        cfg: (Config)
+
+        _feat_stride(optional): (int) scaling factor between input feature
+                                map (class_prob_reshape) and original image.
+                                Default: 16 
+        anchor_scales (optional):  (list of int) scale for size of anchor boxes
+                                   Default: [2,4,8]
+
+    Returns:
+        all_labels : (ndarray) labels assigned to each anchor box
+        all_bbox_targets:  (ndarray) box parameter targets for each anchor
+        all_bbox_inside_weights: (ndarray) to be removed
+        all_bbox_outside_weights: (ndarray) to be removed
+
     ''' 
     # Algorithm:
     #
@@ -79,16 +81,12 @@ def anchor_target_layer(cls_score, gt_boxes, im_info, cfg, _feat_stride=[16, ],
     inds_inside = np.where(
         (all_anchors[:, 0] >= -_allowed_border) &
         (all_anchors[:, 1] >= -_allowed_border) &
-        (all_anchors[:, 2] < im_info[1] + _allowed_border) &  # width
-        (all_anchors[:, 3] < im_info[0] + _allowed_border)  # height
+        (all_anchors[:, 2] < img_info[1] + _allowed_border) &  # width
+        (all_anchors[:, 3] < img_info[0] + _allowed_border)  # height
     )[0]
 
     # keep only inside anchors
     anchors = all_anchors[inds_inside, :]
-    #add one set of anchors for each batch
-    #anchors = np.tile(anchors, (batch_size,1,1))
-    #scores = scores[inds_inside,:]
-
 
     all_labels = None 
     all_bbox_targets = None 
@@ -98,16 +96,15 @@ def anchor_target_layer(cls_score, gt_boxes, im_info, cfg, _feat_stride=[16, ],
     for batch_ind in range(batch_size):
 
         # label: 1 is positive, 0 is negative, -1 is dont care
-        # (A)
         labels = np.empty((len(inds_inside),), dtype=np.float32)
         labels.fill(-1)
 
         #get rid of background gt_boxes
         gt_box = np.expand_dims(gt_boxes[batch_ind,:], 0)
         if gt_box[0,-1] == 0:
+            #if target is not present(no gt box) all boxes are bg (0)
             labels.fill(0)
         else:
-
             # overlaps between the anchors and the gt boxes
             # overlaps (ex, gt), shape is A x G
             overlaps = bbox_overlaps(
@@ -151,7 +148,7 @@ def anchor_target_layer(cls_score, gt_boxes, im_info, cfg, _feat_stride=[16, ],
                 bg_inds, size=(len(bg_inds) - num_bg), replace=False)
             labels[disable_inds] = -1
 
-        #Phil add
+        #if the gt_box is a dummy bg, there are no bbox_targets
         if gt_box[0,-1] == 0:
             bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
         else:
@@ -204,6 +201,7 @@ def anchor_target_layer(cls_score, gt_boxes, im_info, cfg, _feat_stride=[16, ],
 
         bbox_outside_weights = bbox_outside_weights
 
+        #finished one batch, update data structs
         if all_labels is None:
             all_labels = labels
             all_bbox_targets = bbox_targets
