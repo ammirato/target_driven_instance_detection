@@ -4,9 +4,9 @@ This is an implementation of the technique described in "Target Driven Instance 
 
 
 ## External Requirements
-*Python 2 (might work with Python 3)
-*[PyTorch](http://pytorch.org/)
-*AVD THINGS
+* Python 2 (might work with Python 3)
+* [PyTorch](http://pytorch.org/)
+* AVD THINGS
 
 ## Installation
 ***ADD SOMETHING FOR AVD CODE***
@@ -46,15 +46,17 @@ python train_tdid.py
 
 ####TODO
 1. Make ```proposal_layer``` and  ```anchor_target_layer``` cleaner, easier to understand, etc. 
-2. is regression target on dummy gt box?
+2. is regression target correct on dummy gt box?
 3. Hard negative mining on proposed boxes?
 4. Add to README for AVD code
 5. Add to README for extra data (target images, synthetic data)
 6. Fix eval by object
+7. Test det4class
+8. provide trained models
+
 
 ####Acknowledgements
-longcw code
-
+This code started as a modification of a Faster-RCNN Pytorch implementation [here](https://github.com/longcw/faster_rcnn_pytorch), and still uses some of that code. (In particular nothing was changed in the nms code).
 
 
 
