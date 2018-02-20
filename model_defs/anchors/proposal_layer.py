@@ -4,45 +4,37 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ross Girshick and Sean Bell
 # --------------------------------------------------------
+# Edited by Phil Ammirato, UNC-Chapel Hill
 
 import numpy as np
 import yaml
 
 from .generate_anchors import generate_anchors
-
-# TODO: make fast_rcnn irrelevant
 from .bbox_transform import bbox_transform_inv, clip_boxes
 from ..nms.nms_wrapper import nms
-
-
-
 from .cython_bbox import bbox_overlaps, bbox_intersections
 
 
 
-DEBUG = False
-"""
-Outputs object detection proposals by applying estimated bounding-box
-transformations to a set of regular boxes (called "anchors").
-"""
 
-
-def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, _feat_stride=[16, ],
+def proposal_layer(class_prob_reshape, bbox_pred, img_info, cfg, _feat_stride=[16, ],
                    anchor_scales=[2, 4, 8],gt_boxes=None):
-    """
-    Parameters
-    ----------
-    rpn_cls_prob_reshape: (1 , H , W , Ax2) outputs of RPN, prob of bg or fg
-                         NOTICE: the old version is ordered by (1, H, W, 2, A) !!!!
-    rpn_bbox_pred: (1 , H , W , Ax4), rgs boxes output of RPN
-    im_info: a list of [image_height, image_width, scale_ratios]
-    cfg_key: 'TRAIN' or 'TEST'
-    _feat_stride: the downsampling ratio of feature map to the original input image
-    anchor_scales: the scales to the basic_anchor (basic anchor is [16, 16])
-    ----------
-    Returns
-    ----------
-    rpn_rois : (1 x H x W x A, 5) e.g. [0, x1, y1, x2, y2]
+    ''' 
+    Outputs object detection proposals
+
+    Applys estimated bounding-box transformations to a set of
+    regular boxes (called "anchors").
+    
+    Input parameters:
+
+        class_prob_reshape:
+        bbox_pred: 
+        img_info: 
+        _feat_stride: 
+        anchor_scales: 
+
+    Returns:
+        rois:
 
     # Algorithm:
     #
@@ -58,20 +50,11 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, _feat_stri
     # return the top proposals (-> RoIs top, scores top)
     #layer_params = yaml.load(self.param_str_)
 
-    """
-    batch_size = rpn_cls_prob_reshape.shape[0]
+    ''' 
+
+    batch_size = class_prob_reshape.shape[0]
     _anchors = generate_anchors(scales=np.array(anchor_scales))
     _num_anchors = _anchors.shape[0]
-    # rpn_cls_prob_reshape = np.transpose(rpn_cls_prob_reshape,[0,3,1,2]) #-> (1 , 2xA, H , W)
-    # rpn_bbox_pred = np.transpose(rpn_bbox_pred,[0,3,1,2])              # -> (1 , Ax4, H , W)
-
-    # rpn_cls_prob_reshape = np.transpose(np.reshape(rpn_cls_prob_reshape,[1,rpn_cls_prob_reshape.shape[0],rpn_cls_prob_reshape.shape[1],rpn_cls_prob_reshape.shape[2]]),[0,3,2,1])
-    # rpn_bbox_pred = np.transpose(rpn_bbox_pred,[0,3,2,1])
-    #im_info = im_info[0]
-
-#    assert rpn_cls_prob_reshape.shape[0] == 1, \
-#        'Only single item batches are supported'
-
 
     pre_nms_topN = cfg.PRE_NMS_TOP_N
     post_nms_topN = cfg.POST_NMS_TOP_N
@@ -80,19 +63,11 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, _feat_stri
 
     # the first set of _num_anchors channels are bg probs
     # the second set are the fg probs, which we want
-    scores = rpn_cls_prob_reshape[:, _num_anchors:, :, :]
-    bbox_deltas = rpn_bbox_pred
-    # im_info = bottom[2].data[0, :]
-
-    if DEBUG:
-        print( 'im_size: ({}, {})'.format(im_info[0], im_info[1]) )
-        print( 'scale: {}'.format(im_info[2]))
+    scores = class_prob_reshape[:, _num_anchors:, :, :]
+    bbox_deltas = bbox_pred
 
     # 1. Generate proposals from bbox deltas and shifted anchors
     height, width = scores.shape[-2:]
-
-    if DEBUG:
-        print('score map size: {}'.format(scores.shape) )
 
     # Enumerate all shifts
     shift_x = np.arange(0, width) * _feat_stride
@@ -135,43 +110,30 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, _feat_stri
     proposals = bbox_transform_inv(anchors, bbox_deltas)
 
     # 2. clip predicted boxes to image
-    proposals = clip_boxes(proposals, im_info[:2])
+    proposals = clip_boxes(proposals, img_info[:2])
     #orig_props = proposals
 
     prop_info = []
 
 
     # 3. remove predicted boxes with either height or width < threshold
-    # (NOTE: convert min_size to input image scale stored in im_info[2])
-    #keep = _filter_boxes(proposals, min_size * im_info[2])
-    #proposals = proposals[keep, :]
-    #scores = scores[keep]
-    lose = _filter_boxes(proposals, min_size * im_info[2])
+    # (NOTE: convert min_size to input image scale stored in img_info[2])
+    lose = _filter_boxes(proposals, min_size * img_info[2])
     proposals[lose[0],lose[1],:] = 0
     scores[lose[0],lose[1]] = 0
 
     # # remove irregular boxes, too fat too tall
-    # keep = _filter_irregular_boxes(proposals)
-    # proposals = proposals[keep, :]
-    # scores = scores[keep]
 
     # 4. sort all (proposal, score) pairs by score from highest to lowest
     # 5. take top pre_nms_topN (e.g. 6000)
-    #order = scores.ravel().argsort()[::-1]
     order = scores.argsort(1)[:,::-1]
     anchor_inds = np.tile(np.arange(order.shape[1]),(batch_size,1))
     if pre_nms_topN > 0:
         order = order[:,:pre_nms_topN]
-    #proposals = proposals[order, :]
-    #scores = scores[order]
     b_select = np.arange(batch_size)
     proposals = np.take(proposals,order,axis=1)[b_select,b_select,:,:]
     scores = np.take(scores,order,axis=1)[b_select,b_select,:]
     anchor_inds = np.take(anchor_inds,order,axis=1)[b_select,b_select,:]
-    #anchor_inds = keep[order]
-    #anchor_inds = np.arange[order]
-
-
 
     all_proposals = None
     all_scores = None
@@ -202,10 +164,6 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, _feat_stri
             b_proposals = np.zeros((1,4))
             b_scores = np.zeros((1,1))
             b_anchor_inds = np.zeros(1)
-
-        #batch_inds = np.zeros((b_proposals.shape[0], 1), dtype=np.float32) + batch_ind
-        #blob = np.hstack((batch_inds, b_proposals.astype(np.float32, copy=False)))
-
 
 
         #match anchor inds with gt boxes
@@ -240,12 +198,10 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg, _feat_stri
                 # fg label: for each gt, anchor with highest overlap
                 b_labels[gt_argmax_overlaps] = 1 
                 # fg label: above threshold IOU
-                #labels[max_overlaps >= cfg.TRAIN.PROPOSAL_POSITIVE_OVERLAP] = 1 
                 b_labels[max_overlaps >= .5] = 1 
 
                 if True:#cfg.TRAIN.PROPOSAL_CLOBBER_POSITIVES:
                     # assign bg labels last so that negative labels can clobber positives
-                    #labels[max_overlaps < cfg.TRAIN.PROPOSAL_NEGATIVE_OVERLAP] = 0 
                     b_labels[max_overlaps < .2] = 0 
         if all_proposals is None:
             all_proposals = np.expand_dims(b_proposals, axis=0)
@@ -291,21 +247,11 @@ def _pad_to_match(to_pad, num_to_add, axis=0):
 
 def _filter_boxes(boxes, min_size):
     """Remove all boxes with any side smaller than min_size."""
-    #ws = boxes[:, 2] - boxes[:, 0] + 1
-    #hs = boxes[:, 3] - boxes[:, 1] + 1
-    #keep = np.where((ws >= min_size) & (hs >= min_size))[0]
     ws = boxes[:,:, 2] - boxes[:,:, 0] + 1
     hs = boxes[:,:, 3] - boxes[:,:, 1] + 1
     lose = np.where((ws < min_size) & (hs < min_size))
     return lose 
 
 
-def _filter_irregular_boxes(boxes, min_ratio=0.2, max_ratio=5):
-    """Remove all boxes with any side smaller than min_size."""
-    ws = boxes[:, 2] - boxes[:, 0] + 1
-    hs = boxes[:, 3] - boxes[:, 1] + 1
-    rs = ws / hs
-    keep = np.where((rs <= max_ratio) & (rs >= min_ratio))[0]
-    return keep
 
 

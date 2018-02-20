@@ -14,9 +14,6 @@ from utils import *
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
 
-
-
-
 def im_detect(net, target_data,im_data, im_info, features_given=True):
     """
     Detect single target object in a single scene image.
@@ -38,9 +35,8 @@ def im_detect(net, target_data,im_data, im_info, features_given=True):
         boxes (ndarray): N x 4 array of predicted bounding boxes
     """
 
-    cls_prob, bbox_pred, rois = net(target_data, im_data, 
-                                    features_given=features_given,
-                                    im_info=im_info)
+    cls_prob, rois = net(target_data, im_data, im_info,
+                                    features_given=features_given)
     scores = cls_prob.data.cpu().numpy()[0,:,:]
     zs = np.zeros((scores.size, 1))
     scores = np.concatenate((zs,scores),1)

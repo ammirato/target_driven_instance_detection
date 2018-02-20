@@ -178,7 +178,7 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
                                       len(target_images[target_name][t_type])))
                 target_img = cv2.imread(target_images[target_name][t_type][img_ind])
                 if np.random.rand() < cfg.AUGMENT_TARGET_IMAGES:
-                    target_img = augment_image(target_img, do_illum=False)
+                    target_img = augment_image(target_img, do_illum=cfg.AUGMENT_TARGET_ILLUMINATION)
                 target_img = normalize_image(target_img,cfg)
                 batch_target_data.append(target_img)
 
@@ -197,7 +197,7 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
         target_data = target_data.permute(0, 3, 1, 2)
 
         # forward
-        net(target_data, im_data, gt_boxes=gt_boxes, im_info=im_info)
+        net(target_data, im_data, im_info, gt_boxes=gt_boxes)
         loss = net.loss
 
         train_loss += loss.data[0]

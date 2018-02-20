@@ -41,3 +41,10 @@ make all
 cd ../../../
 python train_tdid.py
 ```
+
+
+
+
+
+####Acknowledgements
+longcw code

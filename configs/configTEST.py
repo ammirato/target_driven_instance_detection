@@ -24,8 +24,8 @@ class Config():
     FEATURE_NET_NAME= 'vgg16_bn'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= 'TDID_AVD2_34_30_0.18115_0.55835.h5'
-    LOAD_FULL_MODEL= True 
+    FULL_MODEL_LOAD_NAME= ''
+    LOAD_FULL_MODEL= False 
     MODEL_BASE_SAVE_NAME = 'TDID_TEST_00'
     SAVE_FREQ = 1 
     SAVE_BY_EPOCH = True 
@@ -47,6 +47,7 @@ class Config():
     #Target Images
     PRELOAD_TARGET_IMAGES= False
     AUGMENT_TARGET_IMAGES= .9 
+    AUGMENT_TARGET_ILLUMINATION= .3 
     MIN_TARGET_SIZE = 32
 
     #Training Data

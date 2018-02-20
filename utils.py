@@ -1,55 +1,47 @@
 import torch
+import torch.nn as nn
+from torch.autograd import Variable
 import torchvision.models as models
 import os
 import cv2
 import numpy as np
 import math
 import sys
+import h5py
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD
 import active_vision_dataset_processing.data_loading.transforms as AVD_transforms
 
+#TODO check gradient clipping
 
 
-def create_illumination_pattern(rows, cols, xCenter,yCenter,minI=.1,maxI=1,radius=None):
-    if radius is None:
-        radius = float(int(20000 + (30000)*np.random.rand(1)))
 
-    pattern = np.zeros((rows, cols));
-    for row in range(rows):
-        for col in range(cols):
-            dy = row - yCenter;
-            dx = col - xCenter;
-            pattern[row,col] = (minI + (maxI -minI) 
-                                * math.exp(-(.5)*(dx*dx + dy*dy)/ radius))
-
-    return pattern
-
-
-def get_target_images(target_path, target_names,preload_images=False, for_testing=False,
-                      means=None, pytorch_normalize=False):
+def get_target_images(target_path, target_names,preload_images=False):
     """
-    returns dict with path to each target image, or loaded image
+    Returns dict with path to each target image, or loaded image
 
     Ex) get_target_images('target_path', ['possible','target','names'])
 
-    ARGS:
-        target_path -path that holds directories of all targets.
+    Input parameters:
+        target_path: (str) path that holds directories of all targets.
                      i.e. target_path/target_0/* has one type 
                      of target image for each object.
                      target_path/target_1/* has another type 
                      of target image for each object.
                      Each type can have multiple images, 
                      i.e. target_0/* can have multiple images per object
-        target_names - 
+        target_names: (list) list of str, each element is a target name
+        
+        preload_images (optional): (bool) If True, the return dict will have 
+                                   images(as ndarrays) as values. If False,
+                                   the values will be full paths to the images.
+                                           
+     Returns:
+        (dict) key=target_name, value=list of lists
+               Parent list has one list for each target type.
+               Elments in child list are either path to image, or loaded image 
 
-    KWARGS:
-        preload_images - 
-        for_testing  -  loads 1 image per object per type
-        pytorch_normalize -  
     """
-
-
     #type of target image can mean different things, 
     #probably different type is different view
     target_dirs = os.listdir(target_path)
@@ -76,101 +68,110 @@ def get_target_images(target_path, target_names,preload_images=False, for_testin
                     target_images[obj_name][type_ind].append(cv2.imread(
                                             os.path.join(target_path,t_dir,name)))
                 else:
-                    try:
-                        target_images[obj_name][type_ind].append(
-                                                os.path.join(target_path,t_dir,name))
-                    except:
-                        breakp=1
-
-    #for testing, only 1 image per type, and must be loaded
-    if for_testing:
-        for target_name in target_images.keys():
-            cur_images = target_images[target_name]
-            all_types = []
-            for t_type,_ in enumerate(cur_images):
-                #just grab the first image of each type
-                if preload_images:
-                    img = cur_images[t_type][0]
-                else:
-                    img = cv2.imread(cur_images[t_type][0])
-                if means is not None:
-                    img = img-means
-                if pytorch_normalize:
-                    img = img / 255.0
-                    img = (img-[0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
-
-                all_types.append(np.expand_dims(img, axis=0))
-            target_images[target_name] = all_types
-
+                    target_images[obj_name][type_ind].append(
+                                            os.path.join(target_path,t_dir,name))
     return target_images
 
 
 
 
-def match_and_concat_images(img1, img2, min_size=None):
-    """
-    Returns both images stacked and padded with zeros
-
-    """
-    max_rows = max(img1.shape[0], img2.shape[0])
-    max_cols = max(img1.shape[1], img2.shape[1])
-
-    if min_size is not None:
-        max_rows = max(max_rows,min_size)
-        max_cols = max(max_cols,min_size)
-
-    resized_img1 = np.zeros((max_rows,max_cols,img1.shape[2]))
-    resized_img2 = np.zeros((max_rows,max_cols,img2.shape[2]))
-
-    resized_img1[0:img1.shape[0],0:img1.shape[1],:] = img1
-    resized_img2[0:img2.shape[0],0:img2.shape[1],:] = img2
-
-    return np.stack((resized_img1,resized_img2),axis=0) 
-
 def match_and_concat_images_list(img_list, min_size=None):
     """
-    Returns both images stacked and padded with zeros
+    Stacks image in a list into a single ndarray 
 
+    Input parameters:
+        img_list: (list) list of ndarrays, images to be stacked. If images
+                  are not the same shape, zero padding will be used to make
+                  them the same size. 
+
+        min_size (optional): (int) If not None, ensures images are at least
+                             min_size x min_size. Default: None 
+
+    Returns:
+        (ndarray) a single ndarray with first dimension equal to the 
+        number of elements in the inputted img_list    
     """
+    #find size all images will be
     max_rows = 0
     max_cols = 0
     for img in img_list:
         max_rows = max(img.shape[0], max_rows)
         max_cols = max(img.shape[1], max_cols)
-
     if min_size is not None:
         max_rows = max(max_rows,min_size)
         max_cols = max(max_cols,min_size)
 
-
+    #resize and stack the images
     for il,img in enumerate(img_list):
-
         resized_img = np.zeros((max_rows,max_cols,img.shape[2]))
         resized_img[0:img.shape[0],0:img.shape[1],:] = img
         img_list[il] = resized_img
-
     return np.stack(img_list,axis=0) 
 
 
 
 
+def create_illumination_pattern(rows, cols, center_row,center_col,minI=.1,maxI=1,radius=None):
+    '''
+    Creates a random illumination pattern mask
+
+    Input parameters:
+        rows: (int) number of rows in returned pattern
+        cols: (int) number of cols in returned pattern
+        center_row: (int) row of center of illumination
+        center_col: (int) col of center of illumination
+
+        minI (optional): min illumination change. Default: .1
+        maxI (optional): (float) max illum change. Default: 1
+        radius (optional): (int) radius of illumination thing. If None
+                           a random radius is chosen. Default: None
+
+    Returns:
+        (ndarray) array to be pixel-wise multiplied with an image to change
+        the images illumination
+    
+    '''
+    if radius is None:
+        radius = float(int(20000 + (30000)*np.random.rand(1)))
+    pattern = np.zeros((rows, cols));
+    for row in range(rows):
+        for col in range(cols):
+            dy = row - center_row;
+            dx = col - center_col;
+            pattern[row,col] = (minI + (maxI -minI) 
+                                * math.exp(-(.5)*(dx*dx + dy*dy)/ radius))
+    return pattern
 
 
-def augment_image(img, crop_max=5, rotate_max=30,blur_max=9, do_illum=True):
+def augment_image(img, crop_max=5, rotate_max=30, do_illum=.5):
+    '''
+    Alters an image with some common data augmentation techniques
+       
+    Imput parameters:
+        img: (ndarray) the image
 
+        crop_max (optional): (int) max length that can be "cropped" from 
+                             each side. Cropping does not change image shape,
+                             but sets "cropped" region to 0. Default: 5 
+        rotate_max (optional): (int) max degrees for in-plane rotation
+                               Default: 30
+        do_illum (optional): (float) chance that a random illumination
+                             change will be applied. Set to 0 if no 
+                             illumination change is desired. Default: .5 
+
+    Returns:
+        (ndarray) the augmented image
+    '''
     #crop
     crops = np.random.choice(crop_max,4)   
     start_row = 0 + crops[0]
     end_row = img.shape[0] - crops[1] 
     start_col = 0 + crops[2]
     end_col = img.shape[1] - crops[3]
-    #img = img[start_row:end_row, start_col:end_col,:]
     img[0:start_row,:,:] = 0
     img[:,0:start_col,:] = 0
     img[end_row:,:,:] = 0
     img[:,end_col:,:] = 0
-
-
 
     #rotate
     rot_angle = np.random.choice(rotate_max*2,1) - rotate_max
@@ -179,7 +180,7 @@ def augment_image(img, crop_max=5, rotate_max=30,blur_max=9, do_illum=True):
 
 
     #change illumination
-    if do_illum:
+    if np.random.rand() < do_illum:
         max_side = max(img.shape[:2])
         xc,yc = np.random.choice(max_side,2)
         pattern = create_illumination_pattern(max_side,max_side,xc,yc)
@@ -195,7 +196,15 @@ def check_object_ids(chosen_ids,id_to_name,target_images):
     Picks only chosen ids that have a target object and target image.
 
     ex) check_object_ids(chosen_ids,id_to_name,target_images)
-        Returns only ids in chosen ids that exist in id_to_name dict, and 
+
+
+    Input Parameters:
+        chosen_ids: (list) list of ints, each int is a class id
+        id_to_name: (dict) key=class_id(int), value=target_name(str)
+        target_images: (dict) same as returned from get_target_images function
+
+    Returns:
+        (list) ids in chosen ids that exist in id_to_name dict, and 
         returns -1 if any id does not have a target image 
     """
 
@@ -214,17 +223,23 @@ def check_object_ids(chosen_ids,id_to_name,target_images):
 
 
 
-def normalize_image(image,cfg):
+def normalize_image(img,cfg):
     """
     Noramlizes image according to config parameters
     
     ex) normalize_image(image,config)
+
+    Input Parameters:
+        img: (ndarray) numpy array, the image to be normalized
+        cfg: (Config) config instance from configs/
+
+    Returns: 
+        (ndarray) noralized image
     """
     if cfg.PYTORCH_FEATURE_NET:
-        return ((image/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
+        return ((img/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
     else:
-        print('only pytorch feature nets supported at this time!')
-        return -1
+        raise NotImplementedError
 
 
 
@@ -232,7 +247,19 @@ def normalize_image(image,cfg):
 
 def get_class_id_to_name_dict(root,file_name='instance_id_map.txt'):
     """
-    Returns a dict from integer class id to string name
+    Get dict from integer class id to string name
+
+    Input Parameters:
+        root: (str) directory that holds .txt file with class names and ids
+    
+        file_name (optional): (str) name of file with class names and ids
+                              Default: 'instance_id_map.txt'
+
+                              Format: each line has: target_name id
+                              where id is an integer character
+
+    Returns:
+        (dict) dict with key=id, value=target_name
     """
     map_file = open(os.path.join(root,file_name),'r')
     id_to_name_dict = {}
@@ -252,16 +279,25 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
     """
     Returns a loader for the AVD dataset.
 
-    dataset = get_AVD_dataset('/path/to/data', ['scene1','scene2,...], [chosen_ids])
+    dataset = get_AVD_dataset('/path/to/data',['scene1','scene2], [chosen_ids])
 
 
-    ARGS:
-        root: path to data. Parent of all scene directories
-        scene_list: scenes to include
-        chosen_ids: list of object ids to keep labels for
+    Input Parameters:
+        root: (str) path to data. Parent of all scene directories
+        scene_list: (list) scenes to include
+        chosen_ids: (list) list of object ids to keep labels for
                     (other labels discarded) 
-    KEYWORD ARGS:
-        max_difficulty(int=4): max bbox difficulty to use 
+
+        max_difficulty (optional): (int) max bbox difficulty to use Default: 4
+        instance_fname (optional): (str) name of file with class ids and names
+                                   If none, uses default in get_class_id_to_name
+                                   Default: None
+        classification (opitional): (bool) Whether or not data is for
+                                    classification. Default: False
+
+    Returns:
+        an instance of AVD class from the AVD data_loading code 
+
     """
     ##initialize transforms for the labels
     #only consider boxes from the chosen classes
@@ -293,6 +329,13 @@ def save_training_meta_data(cfg,net):
     Writes a text file that describes model and paramters.
     
     ex) save_training_meta_data(cfg,net)
+
+    Input parameters:
+        cfg: (Config) a config isntance from configs/ 
+        net: (torch Module) a pytorch network   
+  
+    Returns:
+        None 
     """
     meta_fid = open(os.path.join(cfg.META_SAVE_DIR, cfg.MODEL_BASE_SAVE_NAME + '.txt'),'w')
    
@@ -310,6 +353,23 @@ def save_training_meta_data(cfg,net):
 
 
 def load_pretrained_weights(model_name):
+    '''
+    Load weights of a pretrained pytorch model for feature extraction
+
+    Example: For Alexnet, a torch.nn.Sequential model with everything
+             but the fully connected layers is returned
+
+    Input parameters:
+        model_name: name of the model to load. Options:
+            vgg16_bn
+            squeezenet1_1
+            resnet101
+            alexnet
+
+    Returns:
+        (torch.nn.Sequential) The first N layers of the pretrained model
+        that are useful for feature extraction. N depends on which model 
+    '''
     if model_name == 'vgg16_bn':
         vgg16_bn = models.vgg16_bn(pretrained=True)
         return torch.nn.Sequential(*list(vgg16_bn.features.children())[:-1])
@@ -365,13 +425,12 @@ class Timer(object):
 
 
 
-import torch
-import torch.nn as nn
-from torch.autograd import Variable
-import numpy as np
 
 
 class Conv2d(nn.Module):
+    '''
+        A wrapper for a 2D pytorch conv layer. 
+    '''
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, relu=True, same_padding=False, bn=False):
         super(Conv2d, self).__init__()
         padding = int((kernel_size - 1) / 2) if same_padding else 0
@@ -389,6 +448,9 @@ class Conv2d(nn.Module):
 
 
 class FC(nn.Module):
+    '''
+        A wrapper for a pytorch fully connected layer. 
+    '''
     def __init__(self, in_features, out_features, relu=True):
         super(FC, self).__init__()
         self.fc = nn.Linear(in_features, out_features)
@@ -402,28 +464,63 @@ class FC(nn.Module):
 
 
 def save_net(fname, net):
-    import h5py
+    '''
+    Saves a network using h5py
+    
+    Input parameters:
+        fname: (str) full path of file to save model
+        net: (torch.nn.Module) network to save
+    '''
     h5f = h5py.File(fname, mode='w')
     for k, v in net.state_dict().items():
         h5f.create_dataset(k, data=v.cpu().numpy())
 
 
 def load_net(fname, net):
-    import h5py
+    '''
+    Loads a network using h5py
+    
+    Input parameters:
+        fname: (str) full path of file to load model from
+        net: (torch.nn.Module) network to load weights to
+    '''
     h5f = h5py.File(fname, mode='r')
     for k, v in net.state_dict().items():
         param = torch.from_numpy(np.asarray(h5f[k]))
         v.copy_(param)
 
 
-def np_to_variable(x, is_cuda=True, dtype=torch.FloatTensor):
-    v = Variable(torch.from_numpy(x).type(dtype))
+def np_to_variable(np_var, is_cuda=True, dtype=torch.FloatTensor):
+    '''
+    Converts numpy array to pytorch Variable
+
+    Input parameters:
+        np_var: (ndarray) numpy variable
+
+        is_cuda (optional): (bool) If True, torch variable's .cuda() is
+                           applied. If false nothing happens. Default: True
+        dtype (optional):  (type) desired type of returned torch variable.
+                            Default: torch.FloatTensor
+
+    Returns:
+        (torch.autograd.Variable) a torch variable version of the np_var
+    '''
+    pytorch_var = Variable(torch.from_numpy(np_var).type(dtype))
     if is_cuda:
-        v = v.cuda()
-    return v
+        pytorch_var = pytorch_var.cuda()
+    return pytorch_var 
 
 
 def weights_normal_init(model, dev=0.01):
+    '''
+    Initialize weights of model randomly according to a normal distribution
+
+    Input parameters:
+        model: (torch.nn.Module) pytorch model
+        
+        dev (optional): (float) standard deviation of the normal distribution
+                        Default: .01
+    '''
     if isinstance(model, list):
         for m in model:
             weights_normal_init(m, dev)
@@ -436,7 +533,9 @@ def weights_normal_init(model, dev=0.01):
 
 
 def clip_gradient(model, clip_norm):
-    """Computes a gradient clipping coefficient based on gradient norm."""
+    '''
+    Computes a gradient clipping coefficient based on gradient norm.
+    ''' 
     totalnorm = 0 
     for p in model.parameters():
 #    for name,p in model.named_parameters():

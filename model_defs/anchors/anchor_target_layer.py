@@ -4,6 +4,7 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ross Girshick and Sean Bell
 # --------------------------------------------------------
+# Edited by Phil Ammirato, UNC-Chapel Hill
 
 import os
 import yaml
@@ -12,20 +13,16 @@ import numpy.random as npr
 
 from .generate_anchors import generate_anchors
 from .cython_bbox import bbox_overlaps, bbox_intersections
-
 from .bbox_transform import bbox_transform
 
-DEBUG = False
-
-
-def anchor_target_layer(rpn_cls_score, gt_boxes, im_info, cfg, _feat_stride=[16, ],
+def anchor_target_layer(cls_score, gt_boxes, im_info, cfg, _feat_stride=[16, ],
                         anchor_scales=[4, 8, 16, 32]):
-    """
+    ''' 
     Assign anchors to ground-truth targets. Produces anchor classification
     labels and bounding-box regression targets.
     Parameters
     ----------
-    rpn_cls_score: for pytorch (1, Ax2, H, W) bg/fg scores of previous conv layer
+    cls_score: for pytorch (1, Ax2, H, W) bg/fg scores of previous conv layer
     gt_boxes: (G, 5) vstack of [x1, y1, x2, y2, class]
     im_info: a list of [image_height, image_width, scale_ratios]
     _feat_stride: the downsampling ratio of feature map to the original input image
@@ -33,41 +30,13 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, im_info, cfg, _feat_stride=[16,
     ----------
     Returns
     ----------
-    rpn_labels : (HxWxA, 1), for each anchor, 0 denotes bg, 1 fg, -1 dontcare
-    rpn_bbox_targets: (HxWxA, 4), distances of the anchors to the gt_boxes(may contains some transform)
+    labels : (HxWxA, 1), for each anchor, 0 denotes bg, 1 fg, -1 dontcare
+    bbox_targets: (HxWxA, 4), distances of the anchors to the gt_boxes(may contains some transform)
                             that are the regression objectives
-    rpn_bbox_inside_weights: (HxWxA, 4) weights of each boxes, mainly accepts hyper param in cfg
-    rpn_bbox_outside_weights: (HxWxA, 4) used to balance the fg/bg,
+    bbox_inside_weights: (HxWxA, 4) weights of each boxes, mainly accepts hyper param in cfg
+    bbox_outside_weights: (HxWxA, 4) used to balance the fg/bg,
                             beacuse the numbers of bgs and fgs mays significiantly different
-    """
-
-    batch_size = rpn_cls_score.shape[0]
-
-    _anchors = generate_anchors(scales=np.array(anchor_scales))
-    _num_anchors = _anchors.shape[0]
-
-    if DEBUG:
-        print( 'anchors:')
-        print( _anchors)
-        print( 'anchor shapes:')
-        print( np.hstack((
-            _anchors[:, 2::4] - _anchors[:, 0::4],
-            _anchors[:, 3::4] - _anchors[:, 1::4],
-        )))
-        _counts = cfg.EPS
-        _sums = np.zeros((1, 4))
-        _squared_sums = np.zeros((1, 4))
-        _fg_sum = 0
-        _bg_sum = 0
-        _count = 0
-
-    # allow boxes to sit over the edge by a small amount
-    _allowed_border = 0
-    # map of shape (..., H, W)
-    # height, width = rpn_cls_score.shape[1:3]
-
-    #im_info = im_info[0]
-
+    ''' 
     # Algorithm:
     #
     # for each (H, W) location i
@@ -76,21 +45,17 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, im_info, cfg, _feat_stride=[16,
     # filter out-of-image anchors
     # measure GT overlap
 
-    #assert rpn_cls_score.shape[0] == 1, \
-    #    'Only single item batches are supported'
+    batch_size = cls_score.shape[0]
+
+    _anchors = generate_anchors(scales=np.array(anchor_scales))
+    _num_anchors = _anchors.shape[0]
+
+    # allow boxes to sit over the edge by a small amount
+    _allowed_border = 0
 
     # map of shape (..., H, W)
     # pytorch (bs, c, h, w)
-    height, width = rpn_cls_score.shape[2:4]
-
-    if DEBUG:
-        print( 'AnchorTargetLayer: height', height, 'width', width)
-        print( '')
-        print( 'im_size: ({}, {})'.format(im_info[0], im_info[1]))
-        print( 'scale: {}'.format(im_info[2]))
-        print( 'height, width: ({}, {})'.format(height, width))
-        print( 'rpn: gt_boxes.shape', gt_boxes.shape)
-        print( 'rpn: gt_boxes', gt_boxes)
+    height, width = cls_score.shape[2:4]
 
     # 1. Generate proposals from bbox deltas and shifted anchors
     shift_x = np.arange(0, width) * _feat_stride
@@ -118,21 +83,17 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, im_info, cfg, _feat_stride=[16,
         (all_anchors[:, 3] < im_info[0] + _allowed_border)  # height
     )[0]
 
-    if DEBUG:
-        print('total_anchors', total_anchors)
-        print( 'inds_inside', len(inds_inside))
-
     # keep only inside anchors
     anchors = all_anchors[inds_inside, :]
     #add one set of anchors for each batch
     #anchors = np.tile(anchors, (batch_size,1,1))
-    #rpn_scores = rpn_scores[inds_inside,:]
+    #scores = scores[inds_inside,:]
 
 
     all_labels = None 
-    all_rpn_bbox_targets = None 
-    all_rpn_bbox_inside_weights = None
-    all_rpn_bbox_outside_weights = None 
+    all_bbox_targets = None 
+    all_bbox_inside_weights = None
+    all_bbox_outside_weights = None 
 
     for batch_ind in range(batch_size):
 
@@ -190,13 +151,10 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, im_info, cfg, _feat_stride=[16,
                 bg_inds, size=(len(bg_inds) - num_bg), replace=False)
             labels[disable_inds] = -1
 
-
-
         #Phil add
         if gt_box[0,-1] == 0:
             bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
         else:
-            # bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
             bbox_targets = _compute_targets(anchors, gt_box[argmax_overlaps, :])
 
         bbox_inside_weights = np.zeros((len(inds_inside), 4), dtype=np.float32)
@@ -205,9 +163,6 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, im_info, cfg, _feat_stride=[16,
         bbox_outside_weights = np.zeros((len(inds_inside), 4), dtype=np.float32)
         if cfg.PROPOSAL_POSITIVE_WEIGHT < 0:
             # uniform weighting of examples (given non-uniform sampling)
-            # num_examples = np.sum(labels >= 0) + 1
-            # positive_weights = np.ones((1, 4)) * 1.0 / num_examples
-            # negative_weights = np.ones((1, 4)) * 1.0 / num_examples
             positive_weights = np.ones((1, 4))
             negative_weights = np.zeros((1, 4))
         else:
@@ -220,13 +175,6 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, im_info, cfg, _feat_stride=[16,
         bbox_outside_weights[labels == 1, :] = positive_weights
         bbox_outside_weights[labels == 0, :] = negative_weights
 
-        if DEBUG:
-            _sums += bbox_targets[labels == 1, :].sum(axis=0)
-            _squared_sums += (bbox_targets[labels == 1, :] ** 2).sum(axis=0)
-            _counts += np.sum(labels == 1)
-            means = _sums / _counts
-            stds = np.sqrt(_squared_sums / _counts - means ** 2)
-
         # map up to original set of anchors
         labels = _unmap(labels, total_anchors, inds_inside, fill=-1)
         bbox_targets = _unmap(bbox_targets, total_anchors, inds_inside, fill=0)
@@ -236,46 +184,41 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, im_info, cfg, _feat_stride=[16,
         # labels
         labels = labels.reshape((1, height, width, A))
         labels = labels.transpose(0, 3, 1, 2)
-        rpn_labels = labels.reshape((1, 1, A * height, width)).transpose(0, 2, 3, 1)
-        #rpn_labels = labels
+        labels = labels.reshape((1, 1, A * height, width)).transpose(0, 2, 3, 1)
+        #labels = labels
 
         # bbox_targets
         bbox_targets = bbox_targets \
             .reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
 
-        rpn_bbox_targets = bbox_targets
+        bbox_targets = bbox_targets
         # bbox_inside_weights
         bbox_inside_weights = bbox_inside_weights \
             .reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
-        # assert bbox_inside_weights.shape[2] == height
-        # assert bbox_inside_weights.shape[3] == width
 
-        rpn_bbox_inside_weights = bbox_inside_weights
+        bbox_inside_weights = bbox_inside_weights
 
         # bbox_outside_weights
         bbox_outside_weights = bbox_outside_weights \
             .reshape((1, height, width, A * 4)).transpose(0, 3, 1, 2)
-        # assert bbox_outside_weights.shape[2] == height
-        # assert bbox_outside_weights.shape[3] == width
 
-        rpn_bbox_outside_weights = bbox_outside_weights
+        bbox_outside_weights = bbox_outside_weights
 
         if all_labels is None:
-            all_labels = rpn_labels
-            all_rpn_bbox_targets = rpn_bbox_targets
-            all_rpn_bbox_inside_weights = rpn_bbox_inside_weights
-            all_rpn_bbox_outside_weights = rpn_bbox_outside_weights
+            all_labels = labels
+            all_bbox_targets = bbox_targets
+            all_bbox_inside_weights = bbox_inside_weights
+            all_bbox_outside_weights = bbox_outside_weights
         else:
-            all_labels = np.concatenate((all_labels,rpn_labels),0)
-            all_rpn_bbox_targets = np.concatenate((all_rpn_bbox_targets,
-                                                  rpn_bbox_targets), 0)
-            all_rpn_bbox_inside_weights = np.concatenate((all_rpn_bbox_inside_weights,
-                                                          rpn_bbox_inside_weights),0)
-            all_rpn_bbox_outside_weights = np.concatenate((all_rpn_bbox_outside_weights,
-                                                           rpn_bbox_outside_weights),0)
+            all_labels = np.concatenate((all_labels,labels),0)
+            all_bbox_targets = np.concatenate((all_bbox_targets,
+                                                  bbox_targets), 0)
+            all_bbox_inside_weights = np.concatenate((all_bbox_inside_weights,
+                                                          bbox_inside_weights),0)
+            all_bbox_outside_weights = np.concatenate((all_bbox_outside_weights,
+                                                           bbox_outside_weights),0)
 
-    #return rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights
-    return all_labels, all_rpn_bbox_targets, all_rpn_bbox_inside_weights, all_rpn_bbox_outside_weights
+    return all_labels, all_bbox_targets, all_bbox_inside_weights, all_bbox_outside_weights
 
 
 def _unmap(data, count, inds, fill=0):
