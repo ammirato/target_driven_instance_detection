@@ -44,7 +44,7 @@ python train_tdid.py
 
 
 
-####TODO
+### TODO
 1. Make ```proposal_layer``` and  ```anchor_target_layer``` cleaner, easier to understand, etc. 
 2. is regression target correct on dummy gt box?
 3. Hard negative mining on proposed boxes?
@@ -53,9 +53,9 @@ python train_tdid.py
 6. Fix eval by object
 7. Test det4class
 8. provide trained models
+9. make a note about downloading pretrained pytorch models
 
-
-####Acknowledgements
+### Acknowledgements
 This code started as a modification of a Faster-RCNN Pytorch implementation [here](https://github.com/longcw/faster_rcnn_pytorch), and still uses some of that code. (In particular nothing was changed in the nms code).
 
 
