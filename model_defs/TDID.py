@@ -234,7 +234,7 @@ class TDID(torch.nn.Module):
             
         '''
 
-        class_score = classs_score.permute(0, 2, 3, 1)
+        class_score = class_score.permute(0, 2, 3, 1)
         bg_scores = torch.index_select(class_score,3,np_to_variable(np.arange(0,9),is_cuda=True, dtype=torch.LongTensor))
         fg_scores = torch.index_select(class_score,3,np_to_variable(np.arange(9,18),is_cuda=True, dtype=torch.LongTensor))
         bg_scores = bg_scores.contiguous().view(-1,1)
