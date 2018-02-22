@@ -383,7 +383,7 @@ def load_pretrained_weights(model_name):
         fnet = models.alexnet(pretrained=True)
         return torch.nn.Sequential(*list(fnet.features.children()))
     else:
-        print 'model name {} not supported!'.format(model_name)
+        raise NotImplementedError
         sys.exit()
 
 

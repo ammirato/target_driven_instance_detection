@@ -6,9 +6,9 @@ import cv2
 import numpy as np
 import sys
 
-from anchors.proposal_layer import proposal_layer as proposal_layer_py
-from anchors.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
-from utils import *
+from .anchors.proposal_layer import proposal_layer as proposal_layer_py
+from .anchors.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
+from target_driven_instance_detection.utils import *
 
 class TDID(torch.nn.Module):
     '''

@@ -2,7 +2,7 @@ import os
 import torch
 import torchvision.models as models
 import cv2
-import cPickle
+#import cPickle
 import numpy as np
 import importlib
 import json
@@ -198,13 +198,13 @@ if __name__ == '__main__':
         target_images = get_target_images(cfg.TARGET_IMAGE_DIR, 
                                           cfg.NAME_TO_ID.keys())
     else:
-        print 'Must use pytorch pretrained model, others not supported'
+        raise NotImplementedError
         #would need to add new normaliztion to get_target_images, and elsewhere
 
     #make sure only targets that have ids, and have target images are chosen
     test_ids = check_object_ids(cfg.TEST_OBJ_IDS, cfg.ID_TO_NAME,target_images)
     if test_ids==-1:
-        print 'Invalid IDS!'
+        print('Invalid IDS!')
         sys.exit()
 
     testset = get_AVD_dataset(cfg.DATA_BASE_DIR,

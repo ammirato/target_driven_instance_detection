@@ -62,7 +62,7 @@ target_images ={}
 if cfg.PYTORCH_FEATURE_NET:
     target_images = get_target_images(cfg.TARGET_IMAGE_DIR,cfg.NAME_TO_ID.keys())
 else:
-    print 'Must use pytorch pretrained model, others not supported'
+    raise NotImplementedError
     #would need to add new normalization to get_target_images, and utilts, etc 
 
 #make sure only targets that have ids, and have target images are chosen
@@ -71,7 +71,7 @@ cfg.TRAIN_OBJ_IDS = train_ids
 val_ids = check_object_ids(cfg.VAL_OBJ_IDS, cfg.ID_TO_NAME,target_images) 
 cfg.VAL_OBJ_IDS = val_ids
 if train_ids==-1 or val_ids==-1:
-    print 'Invalid IDS!'
+    print('Invalid IDS!')
     sys.exit()
 
 
@@ -227,8 +227,8 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
                        'epoch:%d loss: %.4f tot_avg_loss: %.4f %s' % (
                 step,  epoch_loss/epoch_step_cnt, fps, 1./fps, 
                 epoch, loss.data[0],train_loss/(step+1), cfg.MODEL_BASE_SAVE_NAME)
-            print log_text
-            print target_use_cnt
+            print(log_text)
+            print(target_use_cnt)
 
         if (not cfg.SAVE_BY_EPOCH) and  total_iterations % cfg.SAVE_FREQ==0:
             validate_and_save(cfg,net,valset,target_images,epoch,total_iterations)
