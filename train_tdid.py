@@ -17,7 +17,7 @@ from evaluation.coco_det_eval import coco_det_eval
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
 
 # load config
-cfg_file = 'configTEST' #NO FILE EXTENSTION!
+cfg_file = 'configAVD2' #NO FILE EXTENSTION!
 cfg = importlib.import_module('configs.'+cfg_file)
 cfg = cfg.get_config()
 
