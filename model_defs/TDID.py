@@ -178,7 +178,7 @@ class TDID(torch.nn.Module):
                                                 self._feat_stride, 
                                                 self.anchor_scales)
             self.class_cross_entropy_loss, self.box_regression_loss = \
-                    self.build_loss(class_prob_reshape, bbox_pred, anchor_data)
+                    self.build_loss(class_score_reshape, bbox_pred, anchor_data)
 
             self.roi_cross_entropy_loss = self.build_roi_loss(class_score, 
                                                     scores,anchor_inds, labels)

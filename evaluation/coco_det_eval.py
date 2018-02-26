@@ -18,7 +18,7 @@ def coco_det_eval(gt_path, det_path, catIds,
         catIds: (list of int) class ids to evaluate
 
         iouThrs: (int) iou threshold for a correct detection Default: .5
-        max_dets (optional): (list of int) Default: [1,10,100]
+        maxDets (optional): (list of int) Default: [1,10,100]
 
     Returns:
         (float) m_ap result
@@ -45,6 +45,6 @@ def coco_det_eval(gt_path, det_path, catIds,
     cocoEval.accumulate()
     cocoEval.summarize()
 
-    return cocoEval.stats[2]
+    return cocoEval.stats[1]
 
 

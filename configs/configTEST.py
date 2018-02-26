@@ -24,27 +24,27 @@ class Config():
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
     MODEL_BASE_SAVE_NAME = 'TDID_TEST_00'
-    SAVE_FREQ = 1 
+    SAVE_FREQ = 5 
     SAVE_BY_EPOCH = True 
 
 
     #Training 
-    MAX_NUM_EPOCHS= 5 
-    BATCH_SIZE = 5
+    MAX_NUM_EPOCHS= 20 
+    BATCH_SIZE = 5 
     LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
-    NUM_WORKERS = 8 
-    RESIZE_IMG = .5 
-    RESIZE_IMG_FACTOR = .75
+    NUM_WORKERS = 4 
+    RESIZE_IMG = 0 
+    RESIZE_IMG_FACTOR = 0 
     CHOOSE_PRESENT_TARGET = .6
     DET4CLASS = False 
     USE_ROI_LOSS_ONLY = False 
 
     #Target Images
     PRELOAD_TARGET_IMAGES= False
-    AUGMENT_TARGET_IMAGES= .9 
+    AUGMENT_TARGET_IMAGES= 0 
     AUGMENT_TARGET_ILLUMINATION= .3 
     MIN_TARGET_SIZE = 32
 
@@ -69,7 +69,7 @@ class Config():
 
     ##############################################
     #Testing
-    TEST_RESIZE_IMG_FACTOR =  .75 
+    TEST_RESIZE_IMG_FACTOR = 0 
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7

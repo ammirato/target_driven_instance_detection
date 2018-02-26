@@ -23,13 +23,13 @@ class Config():
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_01'
-    SAVE_FREQ = 1 
+    MODEL_BASE_SAVE_NAME = 'TDIDc_AVD2_01'
+    SAVE_FREQ = 5 
     SAVE_BY_EPOCH = True 
 
 
     #Training 
-    MAX_NUM_EPOCHS= 10 
+    MAX_NUM_EPOCHS= 41 
     BATCH_SIZE = 5 
     LEARNING_RATE = .001
     MOMENTUM = .9
@@ -37,7 +37,7 @@ class Config():
     DISPLAY_INTERVAL = 10
     NUM_WORKERS = 2 
     RESIZE_IMG = 0 
-    RESIZE_IMG_FACTOR = .75
+    RESIZE_IMG_FACTOR = 0 
     CHOOSE_PRESENT_TARGET = .6
     DET4CLASS = False 
     USE_ROI_LOSS_ONLY = False 
@@ -72,7 +72,7 @@ class Config():
                 ]
 
     VAL_OBJ_IDS = TRAIN_OBJ_IDS 
-    VAL_FRACTION_OF_NO_BOX_IMAGES = .01 
+    VAL_FRACTION_OF_NO_BOX_IMAGES = 1 
     VAL_LIST=   [
                  'Home_003_1',
                  'Home_003_2',

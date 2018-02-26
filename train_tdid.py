@@ -11,7 +11,6 @@ import time
 
 from model_defs.TDID import TDID 
 from utils import *
-#from test_tdid import test_net
 from evaluation.coco_det_eval import coco_det_eval 
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
@@ -124,7 +123,7 @@ total_iterations = 1
 save_training_meta_data(cfg,net)
 
 print('Begin Training...')
-for epoch in range(cfg.MAX_NUM_EPOCHS):
+for epoch in range(1,cfg.MAX_NUM_EPOCHS+1):
     target_use_cnt = {}
     for cid in train_ids:
         target_use_cnt[cid] = [0,0]
@@ -203,10 +202,11 @@ for epoch in range(cfg.MAX_NUM_EPOCHS):
 
         # forward
         net(target_data, im_data, im_info, gt_boxes=gt_boxes)
-        if cfg.USE_ROI_LOSS_ONLY:
-            loss = net.roi_cross_entropy_loss
-        else:
-            loss = net.loss
+ #       if cfg.USE_ROI_LOSS_ONLY:
+ #           loss = net.roi_cross_entropy_loss
+ #       else:
+ #           loss = net.loss
+        loss = net.loss
 
         train_loss += loss.data[0]
         epoch_step_cnt += 1
