@@ -13,7 +13,7 @@ from model_defs.TDID import TDID
 from utils import *
 from evaluation.coco_det_eval import coco_det_eval 
 
-import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
+import active_vision_dataset_processing.data_loading.active_vision_dataset as AVD  
 
 # load config
 cfg_file = 'configAVD2' #NO FILE EXTENSTION!

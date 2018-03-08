@@ -11,7 +11,7 @@ from model_defs.TDID import TDID
 from model_defs.nms.nms_wrapper import nms
 from utils import * 
 
-import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
+import active_vision_dataset_processing.data_loading.active_vision_dataset as AVD  
 
 
 def im_detect(net, target_data,im_data, im_info, features_given=True):

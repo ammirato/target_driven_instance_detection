@@ -11,7 +11,8 @@ class Config():
     FULL_MODEL_LOAD_DIR= BASE_DIR + 'Detection/recorded_models_and_meta/models/'
     SNAPSHOT_SAVE_DIR= BASE_DIR + 'Detection/Models/'
     META_SAVE_DIR = BASE_DIR + 'Detection/ModelsMeta/'
-    TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
+    #TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
+    TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/uw_real_and_BB_square_100/'
     TEST_OUTPUT_DIR = BASE_DIR + 'Detection/TestOutputs/'
     GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/avd_split2.json'
     VID_DATA_DIR = BASE_DIR + 'ILSVRC/'
@@ -23,21 +24,21 @@ class Config():
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDIDc_AVD2_01'
-    SAVE_FREQ = 5 
+    MODEL_BASE_SAVE_NAME = 'TDIDtest_AVD2_03'
+    SAVE_FREQ = 10 
     SAVE_BY_EPOCH = True 
 
 
     #Training 
-    MAX_NUM_EPOCHS= 41 
-    BATCH_SIZE = 5 
+    MAX_NUM_EPOCHS= 50
+    BATCH_SIZE = 4 
     LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
     NUM_WORKERS = 2 
-    RESIZE_IMG = 0 
-    RESIZE_IMG_FACTOR = 0 
+    RESIZE_IMG = 1 
+    RESIZE_IMG_FACTOR = .75 
     CHOOSE_PRESENT_TARGET = .6
     DET4CLASS = False 
     USE_ROI_LOSS_ONLY = False 
@@ -81,7 +82,7 @@ class Config():
 
     ##############################################
     #Testing
-    TEST_RESIZE_IMG_FACTOR = 0 
+    TEST_RESIZE_IMG_FACTOR = .75 
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7

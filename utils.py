@@ -9,7 +9,7 @@ import math
 import sys
 import h5py
 
-import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD
+import active_vision_dataset_processing.data_loading.active_vision_dataset as AVD
 import active_vision_dataset_processing.data_loading.transforms as AVD_transforms
 
 #TODO check gradient clipping
@@ -304,9 +304,6 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
     pick_trans = AVD_transforms.PickInstances(chosen_ids,
                                               max_difficulty=max_difficulty)
     #compose the transforms in a specific order, first to last
-    target_trans = AVD_transforms.Compose([
-                                           pick_trans,
-                                          ])
     if instance_fname is None:
         id_to_name_dict = get_class_id_to_name_dict(root)
     else:
@@ -314,7 +311,7 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
 
     dataset = AVD.AVD(root=root,
                          scene_list=scene_list,
-                         target_transform=target_trans,
+                         target_transform=pick_trans,
                          classification=classification,
                          class_id_to_name=id_to_name_dict,
                          fraction_of_no_box=fraction_of_no_box)

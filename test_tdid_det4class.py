@@ -12,7 +12,7 @@ from model_defs.nms.nms_wrapper import nms
 from utils import * 
 from model_defs.anchors.bbox_transform import bbox_transform_inv, clip_boxes
 
-import active_vision_dataset_processing.data_loading.active_vision_dataset_pytorch as AVD  
+import active_vision_dataset_processing.data_loading.active_vision_dataset as AVD  
 
 
 
