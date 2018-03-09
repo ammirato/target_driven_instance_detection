@@ -47,17 +47,17 @@ To convert yourself:
 ```
 cd ../../
 ```
-Update paths in `convert_AVDgt_to_COCOgt.py` with your `AVD-PATH`, and optionally a different path to save the annotations, `ANN-PATH`
+    Update paths in `convert_AVDgt_to_COCOgt.py` with your `AVD-PATH`, and optionally a different path to save the annotations, `ANN-PATH`
 ```
 python convert_AVDgt_to_COCOgt.py
 
 ```
 
 6. Set paths `configs/configAVD2.py` file. See `configs/README.md` for details on config files. for sure update the config with your:
-    -`AVD-PATH`
-    -`TARGET-PATH`
-    -Path to COCO format annotations 
-    -Where you want to save the trained model
+    *`AVD-PATH`
+    *`TARGET-PATH`
+    *`ANN-PATH` 
+    *Where you want to save the trained model
 
 7. Start training!
 ```

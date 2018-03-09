@@ -6,42 +6,40 @@ class Config():
     """
 
     #Directories - MUST BE CHANGED for your environment
-    BASE_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/'
-    DATA_BASE_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/RohitData/'
-    FULL_MODEL_LOAD_DIR= BASE_DIR + 'Detection/recorded_models_and_meta/models/'
-    SNAPSHOT_SAVE_DIR= BASE_DIR + 'Detection/Models/'
-    META_SAVE_DIR = BASE_DIR + 'Detection/ModelsMeta/'
-    TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
-    #TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/uw_real_and_BB_square_100/'
-    TEST_OUTPUT_DIR = BASE_DIR + 'Detection/TestOutputs/'
-    TEST_GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/AVD_split2_test.json'
-    VAL_GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/AVD_part3_val.json'
+    DATA_BASE_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/'
+    FULL_MODEL_LOAD_DIR= DATA_BASE_DIR + 'Detection/recorded_models_and_meta/models/'
+    SNAPSHOT_SAVE_DIR= DATA_BASE_DIR + 'Detection/Models/'
+    META_SAVE_DIR = DATA_BASE_DIR + 'Detection/ModelsMeta/'
+    TARGET_IMAGE_DIR= DATA_BASE_DIR + '/'
+    #TARGET_IMAGE_DIR= DATA_BASE_DIR + 'instance_detection_targets/uw_real_and_BB_square_100/'
+    TEST_OUTPUT_DIR = DATA_BASE_DIR + 'Detection/TestOutputs/'
+    TEST_GROUND_TRUTH_BOXES = DATA_BASE_DIR + 'RohitCOCOgt/AVD_split2_test.json'
+    VAL_GROUND_TRUTH_BOXES = DATA_BASE_DIR + 'RohitCOCOgt/AVD_part3_val.json'
 
 
     #Model Loading and saving 
     FEATURE_NET_NAME= 'vgg16_bn'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= 'TDIDc_AVD2_01_40_71401_0.60847_0.45442.h5'
+    FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDIDcTEST_AVD2_03'
-    SAVE_FREQ = 10 
+    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_01'
+    SAVE_FREQ = 40 
     SAVE_BY_EPOCH = True 
 
 
     #Training 
-    MAX_NUM_EPOCHS= 50
+    MAX_NUM_EPOCHS= 41 
     BATCH_SIZE = 4 
     LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
-    NUM_WORKERS = 2 
+    NUM_WORKERS = 4 
     RESIZE_IMG = 1 
-    RESIZE_IMG_FACTOR = .75 
+    RESIZE_IMG_FACTOR = .5 
     CHOOSE_PRESENT_TARGET = .6
     DET4CLASS = False 
-    USE_ROI_LOSS_ONLY = False 
 
     #Target Images
     PRELOAD_TARGET_IMAGES= False
