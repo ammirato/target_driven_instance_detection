@@ -7,24 +7,24 @@ class Config():
 
     #Directories - MUST BE CHANGED for your environment
     BASE_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/'
-    DATA_BASE_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
+    DATA_BASE_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/RohitData/'
     FULL_MODEL_LOAD_DIR= BASE_DIR + 'Detection/recorded_models_and_meta/models/'
     SNAPSHOT_SAVE_DIR= BASE_DIR + 'Detection/Models/'
     META_SAVE_DIR = BASE_DIR + 'Detection/ModelsMeta/'
-    #TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
-    TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/uw_real_and_BB_square_100/'
+    TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/AVD_BB_exact_few_and_other_BB_gen_and_AVD_ns_BB_80/'
+    #TARGET_IMAGE_DIR= BASE_DIR + 'instance_detection_targets/uw_real_and_BB_square_100/'
     TEST_OUTPUT_DIR = BASE_DIR + 'Detection/TestOutputs/'
-    GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/avd_split2.json'
-    VID_DATA_DIR = BASE_DIR + 'ILSVRC/'
+    TEST_GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/AVD_split2_test.json'
+    VAL_GROUND_TRUTH_BOXES = BASE_DIR + 'RohitCOCOgt/AVD_part3_val.json'
 
 
     #Model Loading and saving 
     FEATURE_NET_NAME= 'vgg16_bn'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= ''
+    FULL_MODEL_LOAD_NAME= 'TDIDc_AVD2_01_40_71401_0.60847_0.45442.h5'
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDIDtest_AVD2_03'
+    MODEL_BASE_SAVE_NAME = 'TDIDcTEST_AVD2_03'
     SAVE_FREQ = 10 
     SAVE_BY_EPOCH = True 
 
@@ -75,22 +75,24 @@ class Config():
     VAL_OBJ_IDS = TRAIN_OBJ_IDS 
     VAL_FRACTION_OF_NO_BOX_IMAGES = 1 
     VAL_LIST=   [
-                 'Home_003_1',
-                 'Home_003_2',
-                 'Office_001_1',
+                 'Home_007_1',
+                 'Home_010_1',
+                 'Home_011_1',
                 ]
 
     ##############################################
     #Testing
-    TEST_RESIZE_IMG_FACTOR = .75 
+    TEST_RESIZE_IMG_FACTOR = .5 
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
 
-    TEST_OBJ_IDS=[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE]
-    TEST_FRACTION_OF_NO_BOX_IMAGES = .01
+    TEST_OBJ_IDS= TRAIN_OBJ_IDS #[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE]
+    TEST_FRACTION_OF_NO_BOX_IMAGES =  1 
     TEST_LIST = [ 
                  'Home_003_1',
+                 'Home_003_2',
+                 'Office_001_1',
                 ]
     TEST_ONE_AT_A_TIME = False 
     ###############################################

@@ -12,12 +12,11 @@ This is an implementation of the technique described in "Target Driven Instance 
 ## Installation
 These instructions will setup the code and data to run our experiments on the AVD dataset. More instructions will be provided to run our other experiments or use your own data.  
 
-0. Dependencies and Data:
+0. Dependencies:
 
 - Make sure you have Pytorch (and torchvision)
 - Get the [AVD processing code](https://github.com/ammirato/active_vision_dataset_processing), and make sure it is included in your PYTHONPATH
 - Download the [AVD Data](http://www.cs.unc.edu/~ammirato/active_vision_dataset_website/get_data.html) into a path of your choosing, we will refer to is as `AVD-PATH`.
-- Download the [target images](https://drive.google.com/file/d/1uV2I-SYWQvJb0PqzDdg8ESwRdQoVpSWr/view?usp=sharing) into a path of your choosing, we will refer to is as `TARGET-PATH`.
 
 1. Get the code
 ```
@@ -42,24 +41,11 @@ cd ../evaluation/cocoapi/PythonAPI/
 make all
 ```
 
-5. Convert AVD annotations to COCO format yourself, or download the converted files
-To convert yourself:
-```
-cd ../../
-```
-Update paths in `convert_AVDgt_to_COCOgt.py` with your `AVD-PATH`, and optionally a different path to save the annotations, `ANN-PATH`
-```
-python convert_AVDgt_to_COCOgt.py
+5. Convert AVD annotations to COCO format, or download the converted files
 
-```
+6. Set paths in config file
 
-6. Set paths `configs/configAVD2.py` file. See `configs/README.md` for details on config files. for sure update the config with your:
-    -`AVD-PATH`
-    -`TARGET-PATH`
-    -Path to COCO format annotations 
-    -Where you want to save the trained model
-
-7. Start training!
+6. Start training!
 ```
 cd ../../../
 python train_tdid.py

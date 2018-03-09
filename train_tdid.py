@@ -42,7 +42,7 @@ def validate_and_save(cfg,net,valset,target_images, epoch, total_iterations):
                            output_dir=cfg.TEST_OUTPUT_DIR,
                            score_thresh=cfg.SCORE_THRESH)
 
-    m_ap = coco_det_eval(cfg.GROUND_TRUTH_BOXES,
+    m_ap = coco_det_eval(cfg.VAL_GROUND_TRUTH_BOXES,
                          cfg.TEST_OUTPUT_DIR+model_name+'.json',
                          catIds=cfg.VAL_OBJ_IDS)
 
@@ -182,7 +182,8 @@ for epoch in range(1,cfg.MAX_NUM_EPOCHS+1):
                                       len(target_images[target_name][t_type])))
                 target_img = cv2.imread(target_images[target_name][t_type][img_ind])
                 if np.random.rand() < cfg.AUGMENT_TARGET_IMAGES:
-                    target_img = augment_image(target_img, do_illum=cfg.AUGMENT_TARGET_ILLUMINATION)
+                    target_img = augment_image(target_img, 
+                                           do_illum=cfg.AUGMENT_TARGET_ILLUMINATION)
                 target_img = normalize_image(target_img,cfg)
                 batch_target_data.append(target_img)
 
