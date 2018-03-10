@@ -176,8 +176,6 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
                 results.append({'image_id':img_id, 'category_id':cid, 
                                 'bbox':[xmin,ymin,width,height],'score':score})
 
-    if len(results) == 0:
-        results = [[]]
     if output_dir is not None:
         with open(det_file, 'w') as f:
             json.dump(results,f)

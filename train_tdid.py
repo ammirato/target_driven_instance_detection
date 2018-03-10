@@ -42,9 +42,13 @@ def validate_and_save(cfg,net,valset,target_images, epoch, total_iterations):
                            output_dir=cfg.TEST_OUTPUT_DIR,
                            score_thresh=cfg.SCORE_THRESH)
 
-    m_ap = coco_det_eval(cfg.VAL_GROUND_TRUTH_BOXES,
-                         cfg.TEST_OUTPUT_DIR+model_name+'.json',
-                         catIds=cfg.VAL_OBJ_IDS)
+    if len(all_results) == 0:
+        #coco code can't handle no detections?
+        m_ap = 0
+    else:
+        m_ap = coco_det_eval(cfg.VAL_GROUND_TRUTH_BOXES,
+                             cfg.TEST_OUTPUT_DIR+model_name+'.json',
+                             catIds=cfg.VAL_OBJ_IDS)
 
     save_name = os.path.join(cfg.SNAPSHOT_SAVE_DIR, 
                              (cfg.MODEL_BASE_SAVE_NAME+
@@ -75,12 +79,12 @@ if train_ids==-1 or val_ids==-1:
 
 
 print('Setting up training data...')
-train_set = get_AVD_dataset(cfg.DATA_BASE_DIR,
+train_set = get_AVD_dataset(cfg.AVD_ROOT_DIR,
                             cfg.TRAIN_LIST,
                             train_ids,
                             max_difficulty=cfg.MAX_OBJ_DIFFICULTY,
                             fraction_of_no_box=cfg.FRACTION_OF_NO_BOX_IMAGES)
-valset = get_AVD_dataset(cfg.DATA_BASE_DIR,
+valset = get_AVD_dataset(cfg.AVD_ROOT_DIR,
                          cfg.VAL_LIST,
                          val_ids, 
                          max_difficulty=cfg.MAX_OBJ_DIFFICULTY,

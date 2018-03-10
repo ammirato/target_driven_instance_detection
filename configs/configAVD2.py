@@ -1,4 +1,5 @@
 from utils import *
+import os
 
 class Config():
     """
@@ -6,15 +7,15 @@ class Config():
     """
 
     #Directories - MUST BE CHANGED for your environment
-    DATA_BASE_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/'
-    FULL_MODEL_LOAD_DIR= DATA_BASE_DIR + 'Detection/recorded_models_and_meta/models/'
-    SNAPSHOT_SAVE_DIR= DATA_BASE_DIR + 'Detection/Models/'
-    META_SAVE_DIR = DATA_BASE_DIR + 'Detection/ModelsMeta/'
-    TARGET_IMAGE_DIR= DATA_BASE_DIR + '/'
-    #TARGET_IMAGE_DIR= DATA_BASE_DIR + 'instance_detection_targets/uw_real_and_BB_square_100/'
-    TEST_OUTPUT_DIR = DATA_BASE_DIR + 'Detection/TestOutputs/'
-    TEST_GROUND_TRUTH_BOXES = DATA_BASE_DIR + 'RohitCOCOgt/AVD_split2_test.json'
-    VAL_GROUND_TRUTH_BOXES = DATA_BASE_DIR + 'RohitCOCOgt/AVD_part3_val.json'
+    DATA_BASE_DIR = '/net/bvisionserver3/playpen/ammirato/sandbox/code/target_driven_instance_detection/Data/'
+    AVD_ROOT_DIR = '/playpen/ammirato/Data/RohitData/'
+    FULL_MODEL_LOAD_DIR= os.path.join(DATA_BASE_DIR, 'Models/')
+    SNAPSHOT_SAVE_DIR= os.path.join(DATA_BASE_DIR , 'Models/')
+    META_SAVE_DIR = os.path.join(DATA_BASE_DIR, 'ModelsMeta/')
+    TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'AVD_and_BigBIRD_targets_v1/')
+    TEST_OUTPUT_DIR = os.path.join(DATA_BASE_DIR, 'TestOutputs/')
+    TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split2_test.json')
+    VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
 
 
     #Model Loading and saving 
@@ -54,7 +55,7 @@ class Config():
     OBJ_IDS_TO_EXCLUDE = [8,18,32,33]
 
     TRAIN_OBJ_IDS= [cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
-    FRACTION_OF_NO_BOX_IMAGES = .1 
+    FRACTION_OF_NO_BOX_IMAGES = .01 
     MAX_OBJ_DIFFICULTY= 4
     TRAIN_LIST= [
                  'Home_001_1',
@@ -71,7 +72,7 @@ class Config():
                 ]
 
     VAL_OBJ_IDS = TRAIN_OBJ_IDS 
-    VAL_FRACTION_OF_NO_BOX_IMAGES = 1 
+    VAL_FRACTION_OF_NO_BOX_IMAGES = .01 
     VAL_LIST=   [
                  'Home_007_1',
                  'Home_010_1',
@@ -85,7 +86,7 @@ class Config():
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
 
-    TEST_OBJ_IDS= TRAIN_OBJ_IDS #[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE]
+    TEST_OBJ_IDS= TRAIN_OBJ_IDS
     TEST_FRACTION_OF_NO_BOX_IMAGES =  1 
     TEST_LIST = [ 
                  'Home_003_1',
@@ -121,7 +122,7 @@ class Config():
 def get_config():
 
     cfg = Config()
-    cfg.ID_TO_NAME = get_class_id_to_name_dict(cfg.DATA_BASE_DIR,
+    cfg.ID_TO_NAME = get_class_id_to_name_dict(cfg.AVD_ROOT_DIR,
                                                cfg.ID_MAP_FNAME)
     name_to_id = {}
     for cid in cfg.ID_TO_NAME.keys():
