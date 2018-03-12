@@ -44,7 +44,8 @@ cd ../../../
 ```
 
 5. Convert AVD annotations to COCO format yourself, or download the converted files
-To Download the files:
+
+**To Download the files:**
 ```
 mkdir Data
 cd Data
@@ -54,7 +55,7 @@ Download the tar [here](https://drive.google.com/file/d/1VgDBR5K1I-Tb6QVqyqVfGEX
 
 `tar -xf tdid_gt_boxes.tar`
 
-Or to convert yourself:
+**Or to convert yourself:**
 ```python
 cd  evaluation/
 #Update paths in `convert_AVDgt_to_COCOgt.py` with:
@@ -79,7 +80,7 @@ python convert_AVDgt_to_COCOgt.py
 
 7. Start training!
 ```
-cd ../../../
+#make sure you are in root directory of project, target_driven_instance_detection/
 python train_tdid.py
 ```
 
