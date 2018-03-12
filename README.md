@@ -44,7 +44,6 @@ cd ../../../
 ```
 
 5. Convert AVD annotations to COCO format yourself, or download the converted files
-
 To Download the files:
 ```
 mkdir Data
@@ -53,9 +52,7 @@ cd Data
 
 Download the tar [here](https://drive.google.com/file/d/1VgDBR5K1I-Tb6QVqyqVfGEXxcwKGHjQx/view?usp=sharing) 
 
-```
-tar -xf tdid_gt_boxes.tar
-```
+`tar -xf tdid_gt_boxes.tar`
 
 Or to convert yourself:
 ```python
@@ -75,10 +72,10 @@ python convert_AVDgt_to_COCOgt.py
 
 6. Set paths `configs/configAVD2.py` file. See `configs/README.md` for details on config files. Make sure to update the config with your:
 
-    -`AVD_ROOT_DIR`
-    -`TARGET_IMAGE_DIR`
-    -`VAL_GROUND_TRUTH_BOXES` 
-    -`TEST_GROUND_TRUTH_BOXES`
+    - `AVD_ROOT_DIR`
+    - `TARGET_IMAGE_DIR`
+    - `VAL_GROUND_TRUTH_BOXES` 
+    - `TEST_GROUND_TRUTH_BOXES`
 
 7. Start training!
 ```
