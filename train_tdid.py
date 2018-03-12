@@ -107,7 +107,9 @@ else:
 net.features.eval()#freeze batchnorms layers?
 
 if not os.path.exists(cfg.SNAPSHOT_SAVE_DIR):
-    os.mkdir(cfg.SNAPSHOT_SAVE_DIR)
+    os.makedirs(cfg.SNAPSHOT_SAVE_DIR)
+if not os.path.exists(cfg.MEAT_SAVE_DIR):
+    os.makedirs(cfg.META_SAVE_DIR)
 
 #put net on gpu
 net.cuda()

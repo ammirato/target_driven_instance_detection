@@ -29,9 +29,13 @@ scene_list = [
              #'Office_001_1',
 
              'Home_007_1',
-             #'Home_010_1',
-             #'Home_011_1',
+             'Home_010_1',
+             'Home_011_1',
              ]
+
+
+if not(os.path.isdir(save_path)):
+    os.makedirs(save_path)
 
 #first make categories dict
 map_file = open(os.path.join(AVD_root_path,'instance_id_map.txt'),'r')

@@ -16,8 +16,8 @@ These instructions will setup the code and data to run our experiments on the AV
 
 - Make sure you have Pytorch (and torchvision)
 - Get the [AVD processing code](https://github.com/ammirato/active_vision_dataset_processing), and make sure it is included in your PYTHONPATH
-- Download the [AVD Data](http://www.cs.unc.edu/~ammirato/active_vision_dataset_website/get_data.html) into a path of your choosing, we will refer to is as `AVD-PATH`.
-- Download the [target images](https://drive.google.com/file/d/1uV2I-SYWQvJb0PqzDdg8ESwRdQoVpSWr/view?usp=sharing) into a path of your choosing, we will refer to is as `TARGET-PATH`.
+- Download the [AVD Data](http://www.cs.unc.edu/~ammirato/active_vision_dataset_website/get_data.html) into a path of your choosing, we will refer to is as `AVD_ROOT_DIR`.
+- Download the [target images](https://drive.google.com/file/d/1uV2I-SYWQvJb0PqzDdg8ESwRdQoVpSWr/view?usp=sharing) into a path of your choosing, we will refer to is as `TARGET_IMAGE_DIR`.
 
 1. Get the code
 ```
@@ -40,24 +40,45 @@ cd model_defs/
 ```
 cd ../evaluation/cocoapi/PythonAPI/
 make all
+cd ../../../
 ```
 
 5. Convert AVD annotations to COCO format yourself, or download the converted files
-To convert yourself:
+
+To Download the files:
 ```
-cd ../../
+mkdir Data
+cd Data
+``` 
+
+Download the tar [here](https://drive.google.com/file/d/1VgDBR5K1I-Tb6QVqyqVfGEXxcwKGHjQx/view?usp=sharing) 
+
 ```
-    Update paths in `convert_AVDgt_to_COCOgt.py` with your `AVD-PATH`, and optionally a different path to save the annotations, `ANN-PATH`
+tar -xf tdid_gt_boxes.tar
 ```
+
+Or to convert yourself:
+```python
+cd  evaluation/
+#Update paths in `convert_AVDgt_to_COCOgt.py` with:
+#your AVD_ROOT_DIR
+#a path to save the annotations, we will call it VAL_GROUND_TRUTH_BOXES
+python convert_AVDgt_to_COCOgt.py
+
+#now update the scene_list in convert_AVDgt_to_COCOgt.py 
+#to make the test set
+#change the path to save the annotations, we will call it TEST_GROUND_TRUTH_BOXES
 python convert_AVDgt_to_COCOgt.py
 
 ```
 
-6. Set paths `configs/configAVD2.py` file. See `configs/README.md` for details on config files. for sure update the config with your:
-    *`AVD-PATH`
-    *`TARGET-PATH`
-    *`ANN-PATH` 
-    *Where you want to save the trained model
+
+6. Set paths `configs/configAVD2.py` file. See `configs/README.md` for details on config files. Make sure to update the config with your:
+
+    -`AVD_ROOT_DIR`
+    -`TARGET_IMAGE_DIR`
+    -`VAL_GROUND_TRUTH_BOXES` 
+    -`TEST_GROUND_TRUTH_BOXES`
 
 7. Start training!
 ```

@@ -77,6 +77,8 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
     _t = {'im_detect': Timer(), 'misc': Timer()}
     
     if output_dir is not None:
+        if not(os.path.isdir(output_dir)):
+            os.makedirs(output_dir)
         det_file = os.path.join(output_dir, model_name+'.json')
 
     #load targets, maybe compute features
