@@ -86,20 +86,16 @@ python train_tdid.py
 ```
 
 
-
-### TODO
-4. config files
-5. Add to README for extra data (target images, synthetic data)
-6. Insatnce id map
-7. GMU DATA things
-8. UW data things
-6. Fix eval by object
-7. Test det4class
-8. provide trained models
-9. make a note about downloading pretrained pytorch models
+# TODO
+1. Add data and configs for GMU to AVD experiment
+2. Add data and configs for RGB-D Scenes one-shot classifcation experiment 
+3. Check det4class code
+4. Clean eval by object
+5. provide trained models
+6. make a note about downloading pretrained pytorch models
 
 ### Acknowledgements
-This code started as a modification of a Faster-RCNN Pytorch implementation [here](https://github.com/longcw/faster_rcnn_pytorch), and still uses some of that code. (In particular nothing was changed in the nms code).
+This code started as a modification of a Faster-RCNN Pytorch implementation [here](https://github.com/longcw/faster_rcnn_pytorch), and still uses some of that code. (In particular the nms code).
 
 
 
