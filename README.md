@@ -17,6 +17,7 @@ These instructions will setup the code and data to run our experiments on the AV
 - Make sure you have Pytorch (and torchvision)
 - Get the [AVD processing code](https://github.com/ammirato/active_vision_dataset_processing), and make sure it is included in your PYTHONPATH
 - Download the [AVD Data](http://www.cs.unc.edu/~ammirato/active_vision_dataset_website/get_data.html) into a path of your choosing, we will refer to is as `AVD_ROOT_DIR`.
+- Make sure to also get the [instance id map](https://drive.google.com/file/d/1UmhAr-l-CL3CeBq6U8V973jX5BPWkrlK/view?usp=sharing) and put it in the `AVD_ROOT_DIR`
 - Download the [target images](https://drive.google.com/file/d/1uV2I-SYWQvJb0PqzDdg8ESwRdQoVpSWr/view?usp=sharing) into a path of your choosing, we will refer to is as `TARGET_IMAGE_DIR`.
 
 1. Get the code
@@ -87,9 +88,6 @@ python train_tdid.py
 
 
 ### TODO
-1. Set up validation code --DONE
-2. converting AVD to coco gt --DONE
-3. evaling on org AVD  --DONE
 4. config files
 5. Add to README for extra data (target images, synthetic data)
 6. Insatnce id map
