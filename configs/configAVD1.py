@@ -14,7 +14,7 @@ class Config():
     META_SAVE_DIR = os.path.join(DATA_BASE_DIR, 'ModelsMeta/')
     TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'AVD_and_BigBIRD_targets_v1/')
     TEST_OUTPUT_DIR = os.path.join(DATA_BASE_DIR, 'TestOutputs/')
-    TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split2_test.json')
+    TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split1_test.json')
     VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
 
 
@@ -24,7 +24,7 @@ class Config():
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_01'
+    MODEL_BASE_SAVE_NAME = 'TDID_AVD1_01'
     SAVE_FREQ = 40 
     SAVE_BY_EPOCH = True 
 
@@ -58,17 +58,17 @@ class Config():
     FRACTION_OF_NO_BOX_IMAGES = .1 
     MAX_OBJ_DIFFICULTY= 4
     TRAIN_LIST= [
-                 'Home_001_1',
-                 'Home_001_2',
                  'Home_002_1',
+                 'Home_003_1',
+                 'Home_003_2',
                  'Home_004_1',
                  'Home_004_2',
                  'Home_005_1',
                  'Home_005_2',
                  'Home_006_1',
-                 'Home_008_1',
                  'Home_014_1',
                  'Home_014_2',
+                 'Office_001_1',
                 ]
 
     VAL_OBJ_IDS = TRAIN_OBJ_IDS 
@@ -89,9 +89,9 @@ class Config():
     TEST_OBJ_IDS= TRAIN_OBJ_IDS
     TEST_FRACTION_OF_NO_BOX_IMAGES =  1 
     TEST_LIST = [ 
-                 'Home_003_1',
-                 'Home_003_2',
-                 'Office_001_1',
+                 'Home_001_1',
+                 'Home_001_2',
+                 'Home_008_1',
                 ]
     TEST_ONE_AT_A_TIME = False 
     ###############################################

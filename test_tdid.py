@@ -106,6 +106,7 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
 
     for i,batch in enumerate(dataloader):
         im_data= batch[0]
+        #org_img = im_data
         im_info = im_data.shape[:]
         if cfg.TEST_RESIZE_IMG_FACTOR > 0:
             im_data = cv2.resize(im_data,(0,0),fx=cfg.TEST_RESIZE_IMG_FACTOR, fy=cfg.TEST_RESIZE_IMG_FACTOR)
@@ -178,6 +179,9 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
                 results.append({'image_id':img_id, 'category_id':cid, 
                                 'bbox':[xmin,ymin,width,height],'score':score})
 
+                #org_img = cv2.rectangle(org_img, (box[0], box[1]), (box[2],box[3]), (255,0,0), 2)
+
+        #cv2.imwrite('./out_img.jpg', org_img)
     if output_dir is not None:
         with open(det_file, 'w') as f:
             json.dump(results,f)
@@ -207,7 +211,7 @@ if __name__ == '__main__':
         print('Invalid IDS!')
         sys.exit()
 
-    testset = get_AVD_dataset(cfg.DATA_BASE_DIR,
+    testset = get_AVD_dataset(cfg.AVD_ROOT_DIR,
                               cfg.TEST_LIST,
                               test_ids,
                               max_difficulty=cfg.MAX_OBJ_DIFFICULTY,
