@@ -1,6 +1,6 @@
 # Target Driven Instance Detection
 
-This is an implementation of the technique described in "Target Driven Instance Detection". It is written in python for use with Pytorch. 
+This is an implementation of the technique described in [Target Driven Instance Detection](https://arxiv.org/abs/1803.04610). It is written in python for use with Pytorch. 
 
 
 ## External Requirements
@@ -86,13 +86,31 @@ python train_tdid.py
 ```
 
 
+# Citation
+Please cite our paper if you find our work useful:
+```
+@article{ammiratoTDID18,
+  title = {Target Driven Instance Detection},
+  author = {Ammirato, Phil, and Fu, Cheng-Yang and Shvets, Mykhailo and Kosecka, Jana and Berg, Alexander C.},
+  booktitle = {arXiv:1803.04610},
+  year = {2018}
+}
+```
+
+
+
 # TODO
+## Things that have been done 
 1. Add data and configs for GMU to AVD experiment
 2. Add data and configs for RGB-D Scenes one-shot classifcation experiment 
 3. Check det4class code
 4. Clean eval by object
-5. provide trained models
+5. **Provide trained models**
 6. make a note about downloading pretrained pytorch models
+7. How to add your own data
+
+## Improvements to system
+1. How to choose target image, multiview targt image pooling thing
 
 ### Acknowledgements
 This code started as a modification of a Faster-RCNN Pytorch implementation [here](https://github.com/longcw/faster_rcnn_pytorch), and still uses some of that code. (In particular the nms code).
