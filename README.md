@@ -100,7 +100,7 @@ Please cite our paper if you find our work useful:
 
 
 # TODO
-## Things that have been done 
+### Things to clean and add 
 1. Add data and configs for GMU to AVD experiment
 2. Add data and configs for RGB-D Scenes one-shot classifcation experiment 
 3. Check det4class code
@@ -109,7 +109,7 @@ Please cite our paper if you find our work useful:
 6. make a note about downloading pretrained pytorch models
 7. How to add your own data
 
-## Improvements to system
+### Improvements to system
 1. How to choose target image, multiview targt image pooling thing
 
 ### Acknowledgements
