@@ -106,7 +106,7 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
 
     for i,batch in enumerate(dataloader):
         im_data= batch[0]
-        #org_img = im_data
+        org_img = im_data
         im_info = im_data.shape[:]
         if cfg.TEST_RESIZE_IMG_FACTOR > 0:
             im_data = cv2.resize(im_data,(0,0),fx=cfg.TEST_RESIZE_IMG_FACTOR, fy=cfg.TEST_RESIZE_IMG_FACTOR)
@@ -143,7 +143,9 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
             _t['misc'].tic()
 
             if cfg.TEST_RESIZE_IMG_FACTOR > 0:
-                boxes *= (1.0/cfg.TEST_RESIZE_IMG_FACTOR)        
+                boxes *= (1.0/cfg.TEST_RESIZE_IMG_FACTOR) 
+            if cfg.TEST_RESIZE_BOXES_FACTOR > 0:
+                boxes *= cfg.TEST_RESIZE_BOXES_FACTOR
 
             #get scores for foreground, non maximum supression
             inds = np.where(scores[:, 1] > score_thresh)[0]
@@ -179,9 +181,9 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
                 results.append({'image_id':img_id, 'category_id':cid, 
                                 'bbox':[xmin,ymin,width,height],'score':score})
 
-                #org_img = cv2.rectangle(org_img, (box[0], box[1]), (box[2],box[3]), (255,0,0), 2)
+                org_img = cv2.rectangle(org_img, (box[0], box[1]), (box[2],box[3]), (255,0,0), 2)
 
-        #cv2.imwrite('./out_img.jpg', org_img)
+        cv2.imwrite('./out_img.jpg', org_img)
     if output_dir is not None:
         with open(det_file, 'w') as f:
             json.dump(results,f)
@@ -192,7 +194,7 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
 if __name__ == '__main__':
 
     #load config file
-    cfg_file = 'configAVD2' #NO EXTENSTION!
+    cfg_file = 'configAVD1' #NO EXTENSTION!
     cfg = importlib.import_module('configs.'+cfg_file)
     cfg = cfg.get_config()
 

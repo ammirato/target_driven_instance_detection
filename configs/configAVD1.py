@@ -8,14 +8,15 @@ class Config():
 
     #Directories - MUST BE CHANGED for your environment
     DATA_BASE_DIR = '/net/bvisionserver3/playpen/ammirato/sandbox/code/target_driven_instance_detection/Data/'
-    AVD_ROOT_DIR = '/playpen/ammirato/Data/RohitData/'
+    AVD_ROOT_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
     FULL_MODEL_LOAD_DIR= os.path.join(DATA_BASE_DIR, 'Models/')
     SNAPSHOT_SAVE_DIR= os.path.join(DATA_BASE_DIR , 'Models/')
     META_SAVE_DIR = os.path.join(DATA_BASE_DIR, 'ModelsMeta/')
     TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'AVD_and_BigBIRD_targets_v1/')
     TEST_OUTPUT_DIR = os.path.join(DATA_BASE_DIR, 'TestOutputs/')
     TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split1_test.json')
-    VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
+    VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split1_test.json')
+    #VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
 
 
     #Model Loading and saving 
@@ -25,7 +26,7 @@ class Config():
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
     MODEL_BASE_SAVE_NAME = 'TDID_AVD1_01'
-    SAVE_FREQ = 40 
+    SAVE_FREQ  = 5 
     SAVE_BY_EPOCH = True 
 
 
@@ -37,7 +38,7 @@ class Config():
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
     NUM_WORKERS = 4 
-    RESIZE_IMG = 1 
+    RESIZE_IMG = 0 
     RESIZE_IMG_FACTOR = .5 
     CHOOSE_PRESENT_TARGET = .6
     DET4CLASS = False 
@@ -54,7 +55,7 @@ class Config():
     NAME_TO_ID = {}
     OBJ_IDS_TO_EXCLUDE = [8,18,32,33]
 
-    TRAIN_OBJ_IDS= [cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
+    TRAIN_OBJ_IDS=[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
     FRACTION_OF_NO_BOX_IMAGES = .1 
     MAX_OBJ_DIFFICULTY= 4
     TRAIN_LIST= [
@@ -72,16 +73,20 @@ class Config():
                 ]
 
     VAL_OBJ_IDS = TRAIN_OBJ_IDS 
-    VAL_FRACTION_OF_NO_BOX_IMAGES = 1 
+    VAL_FRACTION_OF_NO_BOX_IMAGES = .01 
     VAL_LIST=   [
-                 'Home_007_1',
-                 'Home_010_1',
-                 'Home_011_1',
+                 'Home_001_1',
+                 'Home_001_2',
+                 'Home_008_1',
+                 #'Home_007_1',
+                 #'Home_010_1',
+                 #'Home_011_1',
                 ]
 
     ##############################################
     #Testing
-    TEST_RESIZE_IMG_FACTOR = .5 
+    TEST_RESIZE_IMG_FACTOR = 0 
+    TEST_RESIZE_BOXES_FACTOR = 2
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
