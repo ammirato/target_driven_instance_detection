@@ -86,6 +86,10 @@ python train_tdid.py
 ```
 
 
+### Trained models
+[Here](https://drive.google.com/file/d/1tN2bFaNUp0hsiZIhmeD6oqXddFtdJoUW/view?usp=sharing) are models trained for each of the 3 splits on the AVD dataset
+
+
 # Citation
 Please cite our paper if you find our work useful:
 ```
