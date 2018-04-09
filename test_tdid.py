@@ -194,7 +194,7 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
 if __name__ == '__main__':
 
     #load config file
-    cfg_file = 'configAVD1' #NO EXTENSTION!
+    cfg_file = 'configAVD2' #NO EXTENSTION!
     cfg = importlib.import_module('configs.'+cfg_file)
     cfg = cfg.get_config()
 

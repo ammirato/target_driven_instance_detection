@@ -8,6 +8,7 @@ import numpy as np
 import math
 import sys
 import h5py
+import json
 
 import active_vision_dataset_processing.data_loading.active_vision_dataset as AVD
 import active_vision_dataset_processing.data_loading.transforms as AVD_transforms
@@ -448,15 +449,18 @@ class FC(nn.Module):
     '''
         A wrapper for a pytorch fully connected layer. 
     '''
-    def __init__(self, in_features, out_features, relu=True):
+    def __init__(self, in_features, out_features, relu=True,dropout=True):
         super(FC, self).__init__()
         self.fc = nn.Linear(in_features, out_features)
         self.relu = nn.ReLU(inplace=True) if relu else None
+        self.dropout = nn.Dropout() if dropout else None
 
     def forward(self, x):
         x = self.fc(x)
         if self.relu is not None:
             x = self.relu(x)
+        if self.dropout is not None:
+            x = self.dropout(x)
         return x
 
 
@@ -552,4 +556,25 @@ def clip_gradient(model, clip_norm):
             except:
                 continue
 
+
+def get_best_moves_dict(AVD_ROOT, scenes_list):
+    '''
+    Aggregates best moves from many scenes into a single dict.
+
+    Input parameters:
+        AVD_ROOT = root directory of AVD dataset
+        scene_list: list of str, all scene names
+
+    Returns:
+        all_best_moves: dict with keys = image names, values = best moves dict
+    '''
+
+    all_best_moves = {}
+    for scene_name in scenes_list:
+        cur_best_moves = json.load(open(os.path.join(AVD_ROOT,
+                                                     scene_name,
+                                                     'best_moves.json')))
+        all_best_moves.update(cur_best_moves)
+
+    return all_best_moves
 

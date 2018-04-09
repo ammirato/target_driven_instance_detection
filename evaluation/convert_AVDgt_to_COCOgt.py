@@ -11,12 +11,12 @@ with the MSCOCO evaluation code.
 #AVD_root_path = '/net/bvisionserver3/playpen10/ammirato/Data/RohitData/'
 AVD_root_path = '/playpen/ammirato/Data/RohitData/'
 save_path = '../Data/GT/'
-save_name = 'AVD_part3_val.json'
+save_name = 'home0031.json'
 scene_list = [
              #'Home_001_1',
              #'Home_001_2',
              #'Home_002_1',
-             #'Home_003_1',
+             'Home_003_1',
              #'Home_003_2',
              #'Home_004_1',
              #'Home_004_2',
@@ -28,9 +28,17 @@ scene_list = [
              #'Home_014_2',
              #'Office_001_1',
 
-             'Home_007_1',
-             'Home_010_1',
-             'Home_011_1',
+             #    'Home_101_1',
+             #    'Home_102_1',
+             #    'Home_103_1',
+             #    'Home_104_1',
+             #    'Home_105_1',
+             #    'Home_106_1',
+             #    'Home_107_1',
+             #    'Home_108_1',
+             #    'Home_109_1',
+
+
              ]
 
 

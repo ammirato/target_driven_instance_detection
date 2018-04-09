@@ -15,25 +15,24 @@ class Config():
     TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'AVD_and_BigBIRD_targets_v1/')
     TEST_OUTPUT_DIR = os.path.join(DATA_BASE_DIR, 'TestOutputs/')
     TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split1_test.json')
-    VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split1_test.json')
-    #VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
+    VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
 
 
     #Model Loading and saving 
     FEATURE_NET_NAME= 'vgg16_bn'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= ''
-    LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD1_01'
+    FULL_MODEL_LOAD_NAME= 'TDID_AVD1_02_40_72201_0.90867_0.33934.h5'
+    LOAD_FULL_MODEL= True 
+    MODEL_BASE_SAVE_NAME = 'TDID_AVD1_03'
     SAVE_FREQ  = 5 
     SAVE_BY_EPOCH = True 
 
 
     #Training 
-    MAX_NUM_EPOCHS= 41 
+    MAX_NUM_EPOCHS= 16
     BATCH_SIZE = 5 
-    LEARNING_RATE = .001
+    LEARNING_RATE = .0001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
@@ -75,12 +74,9 @@ class Config():
     VAL_OBJ_IDS = TRAIN_OBJ_IDS 
     VAL_FRACTION_OF_NO_BOX_IMAGES = .01 
     VAL_LIST=   [
-                 'Home_001_1',
-                 'Home_001_2',
-                 'Home_008_1',
-                 #'Home_007_1',
-                 #'Home_010_1',
-                 #'Home_011_1',
+                 'Home_007_1',
+                 'Home_010_1',
+                 'Home_011_1',
                 ]
 
     ##############################################

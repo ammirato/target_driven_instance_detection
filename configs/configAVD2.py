@@ -8,7 +8,7 @@ class Config():
 
     #Directories - MUST BE CHANGED for your environment
     DATA_BASE_DIR = '/net/bvisionserver3/playpen/ammirato/sandbox/code/target_driven_instance_detection/Data/'
-    AVD_ROOT_DIR = '/playpen/ammirato/Data/RohitData/'
+    AVD_ROOT_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
     FULL_MODEL_LOAD_DIR= os.path.join(DATA_BASE_DIR, 'Models/')
     SNAPSHOT_SAVE_DIR= os.path.join(DATA_BASE_DIR , 'Models/')
     META_SAVE_DIR = os.path.join(DATA_BASE_DIR, 'ModelsMeta/')
@@ -22,22 +22,22 @@ class Config():
     FEATURE_NET_NAME= 'vgg16_bn'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= ''
-    LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_01'
-    SAVE_FREQ = 40 
+    FULL_MODEL_LOAD_NAME= 'TDID_AVD2_03_15_26806_0.36337_0.35057.h5'
+    LOAD_FULL_MODEL= True 
+    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_04'
+    SAVE_FREQ  = 15 
     SAVE_BY_EPOCH = True 
 
 
     #Training 
-    MAX_NUM_EPOCHS= 41 
+    MAX_NUM_EPOCHS= 16 
     BATCH_SIZE = 5 
-    LEARNING_RATE = .001
+    LEARNING_RATE = .0001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
     NUM_WORKERS = 4 
-    RESIZE_IMG = 1 
+    RESIZE_IMG = 0 
     RESIZE_IMG_FACTOR = .5 
     CHOOSE_PRESENT_TARGET = .6
     DET4CLASS = False 
@@ -54,7 +54,7 @@ class Config():
     NAME_TO_ID = {}
     OBJ_IDS_TO_EXCLUDE = [8,18,32,33]
 
-    TRAIN_OBJ_IDS= [cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
+    TRAIN_OBJ_IDS=[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
     FRACTION_OF_NO_BOX_IMAGES = .1 
     MAX_OBJ_DIFFICULTY= 4
     TRAIN_LIST= [
@@ -72,7 +72,7 @@ class Config():
                 ]
 
     VAL_OBJ_IDS = TRAIN_OBJ_IDS 
-    VAL_FRACTION_OF_NO_BOX_IMAGES = 1 
+    VAL_FRACTION_OF_NO_BOX_IMAGES = .01 
     VAL_LIST=   [
                  'Home_007_1',
                  'Home_010_1',
@@ -81,7 +81,8 @@ class Config():
 
     ##############################################
     #Testing
-    TEST_RESIZE_IMG_FACTOR = .5 
+    TEST_RESIZE_IMG_FACTOR = 0 
+    TEST_RESIZE_BOXES_FACTOR = 2
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
