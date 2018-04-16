@@ -3,13 +3,3 @@ Data/
 *.jpg
 *.swp
 
-train_tdid_active.py
-test_tdid_active.py
-model_defs/TDID_active.py
-evaluation/eval_action_selection.py
-configs/configACTIVE.py
-gym_test.py
-gym_AVD/
-*.txt
-convert_test_stats_to_numpy.py
-configGEN4GMU.py

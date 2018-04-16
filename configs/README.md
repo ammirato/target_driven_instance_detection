@@ -64,6 +64,7 @@ The parameters are defined in the following format:
 * `TEST_OBJ_IDS` - objects ids to include in the test set. list of ints
 * `TEST_ONE_AT_A_TIME` - whether to test one target/scene image pair at a time, or use faster testing method. bool
 * `TEST_OUTPUT_DIR` - where to save results of testing. string
+* `TEST_RESIZE_BOXES_FACTOR` - scale to apply to each bounding box dimension, independent of `RESIZE_IMG_FACTOR`
 * `TEST_RESIZE_IMG_FACTOR` - scale for resizing images for testing. float
 * `TRAIN_LIST` - list of scenes included in the training set. list of strings
 * `TRAIN_OBJ_IDS` - objects ids to include in the train set. list of ints
