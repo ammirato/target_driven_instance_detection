@@ -24,7 +24,7 @@ class Config():
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDIDsim_VID_01'
+    MODEL_BASE_SAVE_NAME = 'TDIDsim_altLR_VID_01'
     SAVE_FREQ = 10000 
     SAVE_BY_EPOCH = False 
 
