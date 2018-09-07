@@ -19,19 +19,19 @@ class Config():
 
 
     #Model Loading and saving 
-    FEATURE_NET_NAME= 'vgg16_bn_head'
-    PYTORCH_FEATURE_NET= True
-    USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= ''
+    FEATURE_NET_NAME= 'wfe6'
+    PYTORCH_FEATURE_NET= False 
+    USE_PRETRAINED_WEIGHTS = False 
+    FULL_MODEL_LOAD_NAME= 'TDID_VID_03_90000_0.69500_0.41920.h5'
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDIDsim_altLR_VID_01'
+    MODEL_BASE_SAVE_NAME = 'TDIDwfe6_VID_02'
     SAVE_FREQ = 10000 
     SAVE_BY_EPOCH = False 
 
 
     #Training 
     MAX_NUM_EPOCHS= 16 
-    BATCH_SIZE = 4 
+    BATCH_SIZE = 1 
     LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005

@@ -8,6 +8,7 @@ from scipy import misc
 import scipy.io as sio
 import sys
 import png
+import random
 
 def write_numpy_to_ply(vertices, outfile):
 
@@ -28,98 +29,101 @@ def write_numpy_to_ply(vertices, outfile):
 
 
 def project_points_to_image(world_coords,img_struct,intrinsic,distortion,img_shape,d_img=None, scale=None):
-    world_coords_homog = np.concatenate((world_coords,np.ones((1,world_coords.shape[1]))))
-    R = img_struct[2]
-    t = img_struct[1]
-    if len(t) == 0:
-        print('No t')
-        return [] 
+    try:
+        world_coords_homog = np.concatenate((world_coords,np.ones((1,world_coords.shape[1]))))
+        R = img_struct[2]
+        t = img_struct[1]
+        if len(t) == 0:
+            print('No t')
+            return [] 
 
-    P = np.concatenate((R,t),axis=1) 
-    points = np.matmul(P ,world_coords_homog)
-    zs = points[2,:]
-    zs[zs<0] = 0
-    cur_world_points = world_coords[:,zs.nonzero()[0]]
-    if cur_world_points.size == 0:
-        print('No orinetation')
-        return []
+        P = np.concatenate((R,t),axis=1) 
+        points = np.matmul(P ,world_coords_homog)
+        zs = points[2,:]
+        zs[zs<0] = 0
+        cur_world_points = world_coords[:,zs.nonzero()[0]]
+        if cur_world_points.size == 0:
+            print('No orinetation')
+            return []
 
-    #project points back onto second image to get new bounding box
-    XC = np.matmul(R,cur_world_points) + t
-    a = XC[0,:] / XC[2,:]
-    b = XC[1,:] / XC[2,:]
+        #project points back onto second image to get new bounding box
+        XC = np.matmul(R,cur_world_points) + t
+        a = XC[0,:] / XC[2,:]
+        b = XC[1,:] / XC[2,:]
 
-    r = np.sqrt(a*a + b*b)
-    theta = np.arctan(r)
-    thetad = theta * (1 + distortion[0]*(np.power(theta,2)) +
-                          distortion[1]*(np.power(theta,4)) +
-                          distortion[2]*(np.power(theta,6)) +
-                          distortion[3]*(np.power(theta,8)))
+        r = np.sqrt(a*a + b*b)
+        theta = np.arctan(r)
+        thetad = theta * (1 + distortion[0]*(np.power(theta,2)) +
+                              distortion[1]*(np.power(theta,4)) +
+                              distortion[2]*(np.power(theta,6)) +
+                              distortion[3]*(np.power(theta,8)))
 
-    xx = (thetad/r) * a
-    yy = (thetad/r) * b
+        xx = (thetad/r) * a
+        yy = (thetad/r) * b
 
-    up = intrinsic[0,0] * (xx + 0*yy) + intrinsic[0,2]
-    vp = intrinsic[1,1] *yy + intrinsic[1,2]
+        up = intrinsic[0,0] * (xx + 0*yy) + intrinsic[0,2]
+        vp = intrinsic[1,1] *yy + intrinsic[1,2]
 
-    up[up<0] = 0
-    up[up>=img_shape[1]] = 0
-    vp = vp[up.nonzero()]
-    up = up[up.nonzero()]
-    world_coords = world_coords[:,up.nonzero()]
-    vp[vp<0] = 0
-    vp[vp>=img_shape[0]] = 0
-    up = up[vp.nonzero()]
-    vp = vp[vp.nonzero()]
-    world_coords = cur_world_points[:,vp.nonzero()].squeeze()
+        up[up<0] = 0
+        up[up>=img_shape[1]] = 0
+        vp = vp[up.nonzero()]
+        up = up[up.nonzero()]
+        world_coords = world_coords[:,up.nonzero()]
+        vp[vp<0] = 0
+        vp[vp>=img_shape[0]] = 0
+        up = up[vp.nonzero()]
+        vp = vp[vp.nonzero()]
+        world_coords = cur_world_points[:,vp.nonzero()].squeeze()
 
-    ui = up
-    vi = vp
+        ui = up
+        vi = vp
 
-    if len(ui) == 0 or len(vi) == 0:
-        print('No inside image')
-        return [] 
+        if len(ui) == 0 or len(vi) == 0:
+            print('No inside image')
+            return [] 
 
-    xvals = np.floor(np.asarray(ui))
-    yvals = np.floor(np.asarray(vi))
+        xvals = np.floor(np.asarray(ui))
+        yvals = np.floor(np.asarray(vi))
 
-    #try:
-    #    assert(world_coords.shape[1] == xvals.shape[0])
-    #except:
-    #    breakp = 1
-    #    return []
-    if d_img is not None:
-        reader = png.Reader(d_img)
-        pngdata = reader.read()
-        d_img = np.array(map(np.uint16, pngdata[2]))
-        depth_vals = d_img[yvals.astype(np.int), xvals.astype(np.int)]
-        depth_vals[depth_vals>4500] = 0
-        xvals = xvals[depth_vals.nonzero()]        
-        yvals = yvals[depth_vals.nonzero()]        
-        world_coords = world_coords[:,depth_vals.nonzero()]
-        depth_vals = depth_vals[depth_vals.nonzero()]
+        #try:
+        #    assert(world_coords.shape[1] == xvals.shape[0])
+        #except:
+        #    breakp = 1
+        #    return []
+        if d_img is not None:
+            reader = png.Reader(d_img)
+            pngdata = reader.read()
+            d_img = np.array(map(np.uint16, pngdata[2]))
+            depth_vals = d_img[yvals.astype(np.int), xvals.astype(np.int)]
+            depth_vals[depth_vals>4500] = 0
+            xvals = xvals[depth_vals.nonzero()]        
+            yvals = yvals[depth_vals.nonzero()]        
+            world_coords = world_coords[:,depth_vals.nonzero()]
+            depth_vals = depth_vals[depth_vals.nonzero()]
 
-        if len(xvals) ==0 or len(yvals) == 0:
-            print('Bad depth')
-            return []  
-
-        if scale is not None:
-            cam_pos = img_struct[3]*scale
-            cam_dir = img_struct[4]
-            world_coords *= scale
-            cam_point_vecs = world_coords.squeeze() - cam_pos
-            dists = np.matmul(cam_point_vecs.transpose(), cam_dir).squeeze()
-            diffs = abs(dists - depth_vals) + 5
-            diffs[diffs > 500] = 0
-            xvals = xvals[diffs.nonzero()] 
-            yvals = yvals[diffs.nonzero()] 
             if len(xvals) ==0 or len(yvals) == 0:
-                print('occuleded')
-                return [] 
+                print('Bad depth')
+                return []  
 
-    new_box = [int(xvals.min()), int(yvals.min()), int(xvals.max()), int(yvals.max())]
-    return new_box 
+            if scale is not None:
+                cam_pos = img_struct[3]*scale
+                cam_dir = img_struct[4]
+                world_coords *= scale
+                cam_point_vecs = world_coords.squeeze() - cam_pos
+                dists = np.matmul(cam_point_vecs.transpose(), cam_dir).squeeze()
+                diffs = abs(dists - depth_vals) + 5
+                diffs[diffs > 500] = 0
+                xvals = xvals[diffs.nonzero()] 
+                yvals = yvals[diffs.nonzero()] 
+                if len(xvals) ==0 or len(yvals) == 0:
+                    print('occuleded')
+                    return [] 
 
+        new_box = [int(xvals.min()), int(yvals.min()), int(xvals.max()), int(yvals.max())]
+        return new_box 
+    except:
+        print('Unknow exception')
+        return []
 
 
 def prune_outliers(array, dim, nstd):
@@ -127,7 +131,7 @@ def prune_outliers(array, dim, nstd):
     return array[:,abs(values - values.mean()) < nstd*values.std()]
 
 
-outfile_path = '/playpen/ammirato/AVD_extra.txt'
+outfile_path = '/playpen/ammirato/AVD_extra_4.txt'
 
 max_box = 50000
 min_box = 1500
@@ -135,10 +139,11 @@ min_box = 1500
 avd_root2 = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
 #avd_root2 = '/playpen/ammirato/Data/RohitMetaData/'
 avd_root = '/playpen/ammirato/Data/RohitData/'
-scene_list = ['Home_003_1','Home_001_1', 'Home_004_1', 'Home_002_1', 'Home_005_1']
+#scene_list = ['Home_003_1','Home_001_1', 'Home_004_1', 'Home_002_1', 'Home_005_1']
+scene_list = ['Home_005_1', 'Home_005_2', 'Home_006_1']
 #avd_root = avd_root2 
 #pick a scene
-scene = 'Home_003_1'
+#scene = 'Home_003_1'
 
 for scene in scene_list:
     #pick an image and semi-random bbox in that image
@@ -152,8 +157,8 @@ for scene in scene_list:
     img_structs_dict = {}
     for img_st in img_structs[0,:]:
         img_structs_dict[img_st[0][0]] = img_st
-
-
+    
+    random.shuffle(img_paths)
     for img_path in img_paths:
 
         img_name = img_path[img_path.rfind('/')+1:]
@@ -198,7 +203,7 @@ for scene in scene_list:
                 y *=2
                 w *=2
                 h *=2
-                if w/h > 1.5 or h/w > 1.5:
+                if w==0 or h==0 or w/h > 1.5 or h/w > 1.5:
                     continue
                 box = [x,y,x+w,y+h]
         print('Prop search count {}'.format(counter))
@@ -325,7 +330,7 @@ for scene in scene_list:
             if img_name == org_img_name:
                 continue
             counter += 1
-            if counter > 100:
+            if counter > 200:
                 break
             try:
                 img_struct = img_structs_dict[img_name]
@@ -339,12 +344,12 @@ for scene in scene_list:
             cur_slope =    (cur_cam_pos[2] - cur_cam_dir[2]) / (cur_cam_pos[0] - cur_cam_dir[0])
             cur_intercept = cur_cam_pos[2] - cur_slope*cur_cam_pos[0]
             x_intersection = (cur_intercept - org_intercept) / (org_slope - cur_slope)
-            y_intersection = org_slope * x_interseciton + org_intercept
+            y_intersection = org_slope * x_intersection + org_intercept
             #intersection should be on same side as direction
-            if     ((org_dir[0] > org_pos[0] and x_intersection < org_pos[0]) or
-                    (org_dir[0] < org_pos[0] and x_intersection > org_pos[0]) or
-                    (cur_dir[0] < cur_pos[0] and x_intersection > cur_pos[0]) or
-                    (cur_dir[0] < cur_pos[0] and x_intersection > cur_pos[0]):
+            if     ((org_cam_dir[0] > org_cam_pos[0] and x_intersection < org_cam_pos[0]) or
+                    (org_cam_dir[0] < org_cam_pos[0] and x_intersection > org_cam_pos[0]) or
+                    (cur_cam_dir[0] < cur_cam_pos[0] and x_intersection > cur_cam_pos[0]) or
+                    (cur_cam_dir[0] < cur_cam_pos[0] and x_intersection > cur_cam_pos[0])):
                 print('bad interection')
                 continue
             #get interseciton angle

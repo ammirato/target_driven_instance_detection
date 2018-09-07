@@ -5,6 +5,7 @@ import torchvision.models as models
 import cv2
 import numpy as np
 import sys
+from torchvision.models.resnet import Bottleneck
 
 from .anchors.proposal_layer import proposal_layer as proposal_layer_py
 from .anchors.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
@@ -36,20 +37,34 @@ class TDID(torch.nn.Module):
                                 relu=True, same_padding=True)
 
         #similarity network
-        self.sim_conv1a = Conv2d(128, 256, 3,relu=True,same_padding=True)
-        self.sim_conv1b = Conv2d(256, 256, 3,relu=True,same_padding=True)
-        self.sim_conv2a = Conv2d(256, 512, 3,relu=True,same_padding=True)
-        self.sim_conv2b = Conv2d(512, 512, 3,relu=True,same_padding=True)
-        self.sim_conv3a = Conv2d(512, 512, 3,relu=True,same_padding=True)
-        self.sim_conv3b = Conv2d(512, 512, 3,relu=True,same_padding=True)
+        #self.sim_conv1a = Conv2d(128, 256, 3,relu=True,same_padding=True)
+        #self.sim_conv1b = Conv2d(256, 256, 3,relu=True,same_padding=True)
+        #self.sim_conv2a = Conv2d(256, 512, 3,relu=True,same_padding=True)
+        #self.sim_conv2b = Conv2d(512, 512, 3,relu=True,same_padding=True)
+        #self.sim_conv3a = Conv2d(512, 512, 3,relu=True,same_padding=True)
+        #self.sim_conv3b = Conv2d(512, 512, 3,relu=True,same_padding=True)
+        #self.sim_conv1a = Conv2d(self.num_feature_channels, self.num_feature_channels, 3,relu=True,same_padding=True, bn=True)
+        #self.sim_conv1b = Conv2d(self.num_feature_channels, self.num_feature_channels, 3,relu=True,same_padding=True, bn=True)
+        #self.sim_conv2a = Conv2d(self.num_feature_channels, 512, 3,relu=True,same_padding=True, bn=True)
+        #self.sim_conv2b = Conv2d(512, 512, 3,relu=True,same_padding=True, bn=True)
+        #self.sim_conv3a = Conv2d(512, 512, 3,relu=True,same_padding=True, bn=True)
+        #self.sim_conv3b = Conv2d(512, 512, 3,relu=True,same_padding=True, bn=True)
+
+        self.similarity = torch.nn.Sequential(Conv2d(self.num_feature_channels,self.num_feature_channels,3,relu=True,same_padding=True, bn=True), 
+                                      Conv2d(self.num_feature_channels,self.num_feature_channels,3,relu=True,same_padding=True, bn=True), 
+                                      torch.nn.Dropout2d(),
+                                      torch.nn.MaxPool2d(2),
+                                     )
+        self._feat_stride *= 2 
+
 
 
         #for getting output size of score and bbbox convs
         # 3 = number of anchor aspect ratios
         # 2 = number of classes (background, target)
         # 4 = number of bounding box parameters
-        self.score_conv = Conv2d(512, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
-        self.bbox_conv = Conv2d(512, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
+        self.score_conv = Conv2d(self.num_feature_channels, len(self.anchor_scales) * 3 * 2, 1, relu=False, same_padding=False)
+        self.bbox_conv = Conv2d(self.num_feature_channels, len(self.anchor_scales) * 3 * 4, 1, relu=False, same_padding=False)
 
         # loss
         self.class_cross_entropy_loss = None
@@ -166,21 +181,22 @@ class TDID(torch.nn.Module):
         embedding_feats = self.embedding_conv(concat_feats)
 
         #sim network
-        x = self.sim_conv1a(embedding_feats)
-        x = self.sim_conv1b(x)
-        x = F.max_pool2d(x, 2)
-        x = self.sim_conv2a(x)
-        x = self.sim_conv2b(x)
-        x = F.max_pool2d(x, 2)
-        x = self.sim_conv3a(x)
-        sim_feats = self.sim_conv3b(x)
+        #x = self.sim_conv1a(embedding_feats)
+        #x = self.sim_conv1b(x)
+        #x = F.max_pool2d(x, 2)
+        #x = self.sim_conv2a(x)
+        #x = self.sim_conv2b(x)
+        #x = F.max_pool2d(x, 2)
+        #x = self.sim_conv3a(x)
+        #sim_feats = self.sim_conv3b(x)
+        sim_feats = self.similarity(embedding_feats)
 
 
 
 
         class_score = self.score_conv(sim_feats)
         class_score_reshape = self.reshape_layer(class_score, 2)
-        class_prob = F.softmax(class_score_reshape)
+        class_prob = F.softmax(class_score_reshape,dim=1)
         class_prob_reshape = self.reshape_layer(class_prob, len(self.anchor_scales)*3*2)
 
         bbox_pred = self.bbox_conv(sim_feats)
@@ -438,9 +454,39 @@ class TDID(torch.nn.Module):
         elif net_name == 'alexnet':
             fnet = models.alexnet(pretrained=False)
             return  torch.nn.Sequential(*list(fnet.features.children())), 17, 256
-        if net_name == 'vgg16_bn_head':
+        elif net_name == 'vgg16_bn_head':
             fnet = models.vgg16_bn(pretrained=False)
             return torch.nn.Sequential(*list(fnet.features.children())[:14]), 16, 128 
+        elif net_name == 'wfe2':
+           return torch.nn.Sequential(Conv2d(3,256,7,stride=2,relu=True,same_padding=False, bn=True), 
+                                      Conv2d(256,256,3,relu=True,same_padding=True, bn=True), 
+                                      torch.nn.Dropout2d(),
+                                      torch.nn.MaxPool2d(2),
+                                     ), 2, 256 
+        elif net_name == 'wfe4':
+           return torch.nn.Sequential(Conv2d(3,256,7,stride=2,relu=True,same_padding=False, bn=True), 
+                                      Conv2d(256,256,3,relu=True,same_padding=True, bn=True), 
+                                      torch.nn.Dropout2d(),
+                                      torch.nn.MaxPool2d(2),
+                                      Conv2d(256,512,3,relu=True,same_padding=True, bn=True), 
+                                      Conv2d(512,512,3,relu=True,same_padding=True, bn=True), 
+                                      torch.nn.Dropout2d(),
+                                      torch.nn.MaxPool2d(2)
+                                     ), 4, 512
+        elif net_name == 'wfe6':
+           return torch.nn.Sequential(Conv2d(3,256,7,stride=2,relu=True,same_padding=False, bn=True), 
+                                      Conv2d(256,256,3,relu=True,same_padding=True, bn=True), 
+                                      torch.nn.Dropout2d(),
+                                      torch.nn.MaxPool2d(2),
+                                      Conv2d(256,512,3,relu=True,same_padding=True, bn=True), 
+                                      Conv2d(512,512,3,relu=True,same_padding=True, bn=True), 
+                                      torch.nn.Dropout2d(),
+                                      torch.nn.MaxPool2d(2),
+                                      Conv2d(512,1024,3,relu=True,same_padding=True, bn=True), 
+                                      Conv2d(1024,1024,3,relu=True,same_padding=True, bn=True), 
+                                      torch.nn.Dropout2d(),
+                                      torch.nn.MaxPool2d(2),
+                                     ), 8, 1024 
         else:
             raise NotImplementedError
    

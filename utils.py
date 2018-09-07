@@ -143,7 +143,18 @@ def resize_target_images(img_list, size=[100,100], random_bg=False):
     return np.stack(img_list,axis=0) 
 
 
+def resize_image(img, min_dim, max_dim):
 
+     
+    img_max = max(img.shape)
+    if img_max>max_dim:
+        scale = float(max_dim)/float(img_max)
+        img = cv2.resize(img,(0,0),fx=scale,fy=scale)
+    img_min = min(img.shape[:-1])
+    if img_min<min_dim:
+        scale = float(min_dim)/float(img_min)
+        img = cv2.resize(img,(0,0),fx=scale,fy=scale)
+    return img
 
 
 def create_illumination_pattern(rows, cols, center_row,center_col,minI=.1,maxI=1,radius=None):
@@ -271,10 +282,10 @@ def normalize_image(img,cfg):
     Returns: 
         (ndarray) noralized image
     """
-    if cfg.PYTORCH_FEATURE_NET:
-        return ((img/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
-    else:
-        raise NotImplementedError
+#    if cfg.PYTORCH_FEATURE_NET:
+    return ((img/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
+#    else:
+#        raise NotImplementedError
 
 
 
@@ -310,6 +321,7 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
                        fraction_of_no_box=.1,
                        instance_fname=None,
                        classification=False,
+                       black_out_ids=None,
                       ):
     """
     Returns a loader for the AVD dataset.
@@ -327,8 +339,10 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
         instance_fname (optional): (str) name of file with class ids and names
                                    If none, uses default in get_class_id_to_name
                                    Default: None
-        classification (opitional): (bool) Whether or not data is for
+        classification (optional): (bool) Whether or not data is for
                                     classification. Default: False
+        black_out_ids (optional): (list) Ids of instances whose boxes should 
+                                  be blacked out in images. Default: None
 
     Returns:
         an instance of AVD class from the AVD data_loading code 
@@ -338,6 +352,11 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
     #only consider boxes from the chosen classes
     pick_trans = AVD_transforms.PickInstances(chosen_ids,
                                               max_difficulty=max_difficulty)
+    if black_out_ids is not None:
+        black_out_trans = AVD_transforms.BlackOutObjects(black_out_ids)
+    else:
+        black_out_trans = None
+
     #compose the transforms in a specific order, first to last
     if instance_fname is None:
         id_to_name_dict = get_class_id_to_name_dict(root)
@@ -349,7 +368,8 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
                          target_transform=pick_trans,
                          classification=classification,
                          class_id_to_name=id_to_name_dict,
-                         fraction_of_no_box=fraction_of_no_box)
+                         fraction_of_no_box=fraction_of_no_box,
+                         img_target_transform=black_out_trans)
     return dataset
 
 

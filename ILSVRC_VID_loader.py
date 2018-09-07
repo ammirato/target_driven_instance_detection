@@ -8,7 +8,7 @@ import collections
 import glob
 import xml.etree.ElementTree as ET
 
-
+from utils import *
 
 
 class VID_Loader(object):
@@ -57,7 +57,7 @@ class VID_Loader(object):
 
 
 
-    def get_batch(self, batch_size):
+    def get_batch(self, batch_size,classification=False, dims=[16,200]):
         """ 
         Gets desired image and label
 
@@ -65,7 +65,6 @@ class VID_Loader(object):
         batch_scene_imgs = []
         batch_target_imgs = []
         batch_gt_boxes = []
-
         for batch_ind in range(batch_size):
 
             #pick two random videos
@@ -92,11 +91,18 @@ class VID_Loader(object):
             v1_scene_img = cv2.imread(v1_img_paths[third_frame])
             #get the gt bounding box in this scene image
             v1_gt_bbox = self._get_bbox_from_data_path(v1_img_paths[third_frame])
-
+            if classification:
+                v1_scene_img = v1_scene_img[v1_gt_bbox[1]:v1_gt_bbox[3],v1_gt_bbox[0]:v1_gt_bbox[2],:]
+                v1_scene_img = resize_image(v1_scene_img,dims[0], dims[1])
             #from the second video, get 1 scene image
             v2_path = self.video_data_paths[vid_paths[1]]
             v2_img_paths = glob.glob(os.path.join(v2_path,'*.JPEG'))
-            v2_scene_img = cv2.imread(v2_img_paths[np.random.choice(len(v2_img_paths))])
+            v2_ind = np.random.choice(len(v2_img_paths))
+            v2_scene_img = cv2.imread(v2_img_paths[v2_ind])
+            v2_gt_bbox = self._get_bbox_from_data_path(v2_img_paths[v2_ind])
+            if classification:
+                v2_scene_img = v2_scene_img[v2_gt_bbox[1]:v2_gt_bbox[3],v2_gt_bbox[0]:v2_gt_bbox[2],:]
+                v2_scene_img = resize_image(v2_scene_img,dims[0], dims[1])
             #put dummy background bounding box for second scene image
             v2_gt_bbox = [0,0,0,0,0]
 

@@ -10,6 +10,7 @@ import cv2
 import time
 import matplotlib.pyplot as plt
 
+#from model_defs.TDID import TDID 
 from model_defs.TDID_sim import TDID 
 from utils import *
 from evaluation.coco_det_eval import coco_det_eval 
@@ -23,7 +24,7 @@ cfg_file = 'configVID' #NO FILE EXTENSTION!
 cfg = importlib.import_module('configs.'+cfg_file)
 cfg = cfg.get_config()
 
-max_iterations = 100000
+max_iterations = 50000
 
 test_net = importlib.import_module('test_tdid_VID').test_net
 
@@ -92,17 +93,17 @@ for step in range(1,2*max_iterations):
 
 
     #if step == max_iterations:
-    if step % cfg.SAVE_FREQ == 0:
-        if step % cfg.SAVE_FREQ*2 == 0:
-            params = list(net.parameters())
-            optimizer = torch.optim.SGD(params, lr=cfg.LEARNING_RATE*10,
-                                                momentum=cfg.MOMENTUM, 
-                                                weight_decay=cfg.WEIGHT_DECAY)
-        else:
-            params = list(net.parameters())
-            optimizer = torch.optim.SGD(params, lr=cfg.LEARNING_RATE*.1,
-                                                momentum=cfg.MOMENTUM, 
-                                                weight_decay=cfg.WEIGHT_DECAY)
+    #if step % cfg.SAVE_FREQ == 0:
+    #    if step % cfg.SAVE_FREQ*2 == 0:
+    #        params = list(net.parameters())
+    #        optimizer = torch.optim.SGD(params, lr=cfg.LEARNING_RATE,
+    #                                            momentum=cfg.MOMENTUM, 
+    #                                            weight_decay=cfg.WEIGHT_DECAY)
+    #    else:
+    #        params = list(net.parameters())
+    #        optimizer = torch.optim.SGD(params, lr=cfg.LEARNING_RATE*.1,
+    #                                            momentum=cfg.MOMENTUM, 
+    #                                            weight_decay=cfg.WEIGHT_DECAY)
     
     batch_scene_imgs,batch_gt_boxes,batch_target_imgs = dataloader.get_batch(cfg.BATCH_SIZE) 
     batch_target_imgs = resize_target_images(batch_target_imgs)

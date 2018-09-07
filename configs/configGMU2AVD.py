@@ -26,13 +26,13 @@ class Config():
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_TEST'
-    SAVE_FREQ  = 200 
-    SAVE_BY_EPOCH = False 
+    MODEL_BASE_SAVE_NAME = 'FasterRCNN_GMU2AVD_01'
+    SAVE_FREQ  = 25 
+    SAVE_BY_EPOCH = True 
 
 
     #Training 
-    MAX_NUM_EPOCHS= 16 
+    MAX_NUM_EPOCHS= 50 
     BATCH_SIZE = 5 
     LEARNING_RATE = .0001
     MOMENTUM = .9
@@ -56,13 +56,29 @@ class Config():
     NAME_TO_ID = {}
     OBJ_IDS_TO_EXCLUDE = [8,18,32,33]
 
-    TRAIN_OBJ_IDS=[10]#[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
+    TRAIN_OBJ_IDS=[5,10,12,14,21,28]#[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
     FRACTION_OF_NO_BOX_IMAGES = .01 
     MAX_OBJ_DIFFICULTY= 4
     TRAIN_LIST= [
+                 'Home_101_1',
+                 'Home_102_1',
+                 'Home_103_1',
+                 'Home_104_1',
+                 'Home_105_1',
+                 'Home_106_1',
+                 'Home_107_1',
+                 'Home_108_1',
+                 'Home_109_1',
+                ]
+
+    VAL_OBJ_IDS = TRAIN_OBJ_IDS 
+    VAL_FRACTION_OF_NO_BOX_IMAGES = 1 
+    VAL_LIST=   [
                  'Home_001_1',
                  'Home_001_2',
                  'Home_002_1',
+                 'Home_003_1',
+                 'Home_003_2',
                  'Home_004_1',
                  'Home_004_2',
                  'Home_005_1',
@@ -71,17 +87,7 @@ class Config():
                  'Home_008_1',
                  'Home_014_1',
                  'Home_014_2',
-                ]
-
-    VAL_OBJ_IDS = TRAIN_OBJ_IDS 
-    VAL_FRACTION_OF_NO_BOX_IMAGES = .01 
-    VAL_LIST=   [
-                 'Home_003_1',
-                 'Home_003_2',
                  'Office_001_1',
-                 #'Home_007_1',
-                 #'Home_010_1',
-                 #'Home_011_1',
                 ]
 
     ##############################################

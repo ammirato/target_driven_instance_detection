@@ -93,10 +93,12 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
             img_ind = np.random.choice(np.arange(
                                   len(target_images[target_name][t_type])))
             target_img = cv2.imread(target_images[target_name][t_type][img_ind])
-            target_img = normalize_image(target_img,cfg)
+            #target_img = normalize_image(target_img,cfg)
             target_data.append(target_img)
 
-        target_data = match_and_concat_images_list(target_data)
+        #target_data = match_and_concat_images_list(target_data)
+        target_data = resize_target_images(target_data)
+        target_data = normalize_image(target_data,cfg)
         target_data = np_to_variable(target_data, is_cuda=True)
         target_data = target_data.permute(0, 3, 1, 2)
         if cfg.TEST_ONE_AT_A_TIME:
@@ -194,7 +196,7 @@ def test_net(model_name, net, dataloader, target_images, chosen_ids, cfg,
 if __name__ == '__main__':
 
     #load config file
-    cfg_file = 'configAVD2' #NO EXTENSTION!
+    cfg_file = 'configGEN4GMU' #NO EXTENSTION!
     cfg = importlib.import_module('configs.'+cfg_file)
     cfg = cfg.get_config()
 
