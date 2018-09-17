@@ -26,9 +26,9 @@ class Config():
     FEATURE_NET_NAME= 'vgg16_bn'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= ''
+    FULL_MODEL_LOAD_NAME= 'TDID_GEN4GMU_06_740000_7.48426_0.39258_0.46357.h5'
     LOAD_FULL_MODEL = False 
-    MODEL_BASE_SAVE_NAME = 'TDID_GEN4GMU_11'
+    MODEL_BASE_SAVE_NAME = 'TDID_GEN4GMU_12'
     SAVE_FREQ = 50000
     SAVE_BY_EPOCH = False 
 
@@ -147,22 +147,22 @@ class Config():
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
 
-    TEST_OBJ_IDS= [1,2,3,4,6,7,9,11,13,15,16,17,19,20,22,23,24,25,26,27,28,29,30,31]#TEST_ONLY_OBJ_IDS
+    TEST_OBJ_IDS= TEST_ONLY_OBJ_IDS#[1,2,3,4,6,7,9,11,13,15,16,17,19,20,22,23,24,25,26,27,28,29,30,31]#TEST_ONLY_OBJ_IDS
     TEST_FRACTION_OF_NO_BOX_IMAGES = 1 
-    TEST_LIST = [ 
-                'Home_003_1',
-                'Home_003_2',
-                'Office_001_1',
-    #             'Home_101_1',
-    #             'Home_102_1',
-    #             'Home_103_1',
-    #             'Home_104_1',
-    #             'Home_105_1',
-    #             'Home_106_1',
-    #             'Home_107_1',
-    #             'Home_108_1',
-    #             'Home_109_1',
-                ]
+    TEST_LIST = TEST_ONLY_LIST# [ 
+#                'Home_003_1',
+#                'Home_003_2',
+#                'Office_001_1',
+#    #             'Home_101_1',
+#    #             'Home_102_1',
+#    #             'Home_103_1',
+#    #             'Home_104_1',
+#    #             'Home_105_1',
+#    #             'Home_106_1',
+#    #             'Home_107_1',
+#    #             'Home_108_1',
+#    #             'Home_109_1',
+#                ]
     TEST_ONE_AT_A_TIME = False 
     ###############################################
     #Model paramters

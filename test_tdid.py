@@ -215,6 +215,8 @@ if __name__ == '__main__':
         print('Invalid IDS!')
         sys.exit()
 
+    print(test_ids)
+    print(cfg.TEST_LIST)
     testset = get_AVD_dataset(cfg.AVD_ROOT_DIR,
                               cfg.TEST_LIST,
                               test_ids,
