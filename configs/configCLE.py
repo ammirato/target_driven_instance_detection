@@ -12,29 +12,30 @@ class Config():
     FULL_MODEL_LOAD_DIR= os.path.join(DATA_BASE_DIR, 'Models/')
     SNAPSHOT_SAVE_DIR= os.path.join(DATA_BASE_DIR , 'Models/')
     META_SAVE_DIR = os.path.join(DATA_BASE_DIR, 'ModelsMeta/')
-    #TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'AVD_and_BigBIRD_targets_v1/')
-    TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'HR_target/')
+    TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'uw_real_and_BB/')
+    #TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'HR_target/')
     TEST_OUTPUT_DIR = os.path.join(DATA_BASE_DIR, 'TestOutputs/')
     TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split2_test.json')
     #VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
     VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_split2_test.json')
-
+    AVD_EXTRA_FILE = os.path.join(AVD_ROOT_DIR, 'AVD_extra.txt')
 
     #Model Loading and saving 
-    FEATURE_NET_NAME= 'vgg16_bn'
+    FEATURE_NET_NAME= 'resnet101'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
     FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_TEST'
-    SAVE_FREQ  = 200 
+    MODEL_BASE_SAVE_NAME = 'TDID_CLE_05'
+    SAVE_FREQ = 5000 
     SAVE_BY_EPOCH = False 
 
 
     #Training 
-    MAX_NUM_EPOCHS= 16 
-    BATCH_SIZE = 5 
-    LEARNING_RATE = .0001
+    MAX_NUM_EPOCHS= 500 
+    MAX_NUM_ITERATIONS= 100000 
+    BATCH_SIZE = 4 
+    LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
@@ -43,6 +44,8 @@ class Config():
     RESIZE_IMG_FACTOR = .5 
     CHOOSE_PRESENT_TARGET = .6
     DET4CLASS = False 
+    USE_AVD_EXTRA =  0
+    USE_VID = 0 
 
     #Target Images
     PRELOAD_TARGET_IMAGES= False
@@ -51,12 +54,13 @@ class Config():
     MIN_TARGET_SIZE = 32
 
     #Training Data
-    ID_MAP_FNAME= 'all_instance_id_map.txt'
+    #ID_MAP_FNAME= 'all_instance_id_map.txt'
+    ID_MAP_FNAME= 'hybrid_instance_id_map.txt'
     ID_TO_NAME = {}
     NAME_TO_ID = {}
-    OBJ_IDS_TO_EXCLUDE = [8,18,32,33]
+    OBJ_IDS_TO_EXCLUDE = [8,18,32,33] + range(18,28)
 
-    TRAIN_OBJ_IDS=[10]#[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
+    TRAIN_OBJ_IDS=[cid for cid in range(1,18) if cid not in OBJ_IDS_TO_EXCLUDE] 
     FRACTION_OF_NO_BOX_IMAGES = .01 
     MAX_OBJ_DIFFICULTY= 4
     TRAIN_LIST= [
@@ -71,10 +75,38 @@ class Config():
                  'Home_008_1',
                  'Home_014_1',
                  'Home_014_2',
+
+                 #'Home_101_1',
+                 #'Home_102_1',
+                 #'Home_103_1',
+                 #'Home_104_1',
+                 #'Home_105_1',
+                 #'Home_106_1',
+                 #'Home_107_1',
+                 #'Home_108_1',
+                 #'Home_109_1',
+
+                 #'Gen_010_2',
+                 #'Gen_010_5',
+                 #'Gen_010_6',
+                 #'Gen_010_5',
+                 #'Gen_010_6',
+                 #'Gen_009_4',
+
+                 #'Office_201_1',
+                 #'Office_201_2',
+                 #'Office_201_3',
+                 #'Office_202_1',
+                 #'Office_203_1',
+                 #'Office_204_1',
+                 #'Office_205_1',
+                 #'Office_205_2',
                 ]
 
-    VAL_OBJ_IDS = TRAIN_OBJ_IDS 
-    VAL_FRACTION_OF_NO_BOX_IMAGES = .01 
+    TEST_ONLY_OBJ_IDS = [cid for cid in range(18,28)] 
+    #VAL_OBJ_IDS = TRAIN_OBJ_IDS + TEST_ONLY_OBJ_IDS 
+    VAL_OBJ_IDS =[1,2,3,4,5,6,7,9,10,11,12,13,14,15,16,17]# TRAIN_OBJ_IDS 
+    VAL_FRACTION_OF_NO_BOX_IMAGES = 1 
     VAL_LIST=   [
                  'Home_003_1',
                  'Home_003_2',
@@ -87,7 +119,7 @@ class Config():
     ##############################################
     #Testing
     TEST_RESIZE_IMG_FACTOR = 0 
-    TEST_RESIZE_BOXES_FACTOR = 2
+    TEST_RESIZE_BOXES_FACTOR = 2 
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
@@ -102,7 +134,7 @@ class Config():
     TEST_ONE_AT_A_TIME = False 
     ###############################################
     #Model paramters
-    ANCHOR_SCALES = [1,2,4]
+    ANCHOR_SCALES = [1,2,8]
     NUM_TARGETS = 2
     CORR_WITH_POOLED = True 
     USE_IMG_FEATS = False 

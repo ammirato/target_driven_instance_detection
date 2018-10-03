@@ -12,29 +12,27 @@ class Config():
     FULL_MODEL_LOAD_DIR= os.path.join(DATA_BASE_DIR, 'Models/')
     SNAPSHOT_SAVE_DIR= os.path.join(DATA_BASE_DIR , 'Models/')
     META_SAVE_DIR = os.path.join(DATA_BASE_DIR, 'ModelsMeta/')
-    #TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'AVD_and_BigBIRD_targets_v1/')
-    TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'HR_target/')
+    TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'AVD_and_BigBIRD_targets_v1/')
     TEST_OUTPUT_DIR = os.path.join(DATA_BASE_DIR, 'TestOutputs/')
     TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split2_test.json')
-    #VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
-    VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_split2_test.json')
+    VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
 
 
     #Model Loading and saving 
-    FEATURE_NET_NAME= 'vgg16_bn'
-    PYTORCH_FEATURE_NET= True
-    USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= ''
+    FEATURE_NET_NAME= 'wfe6'
+    PYTORCH_FEATURE_NET= False 
+    USE_PRETRAINED_WEIGHTS = False 
+    FULL_MODEL_LOAD_NAME= 'TDID_VID_03_90000_0.69500_0.41920.h5'
     LOAD_FULL_MODEL= False 
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_TEST'
-    SAVE_FREQ  = 200 
+    MODEL_BASE_SAVE_NAME = 'TDIDwfe6_VID_02'
+    SAVE_FREQ = 10000 
     SAVE_BY_EPOCH = False 
 
 
     #Training 
     MAX_NUM_EPOCHS= 16 
-    BATCH_SIZE = 5 
-    LEARNING_RATE = .0001
+    BATCH_SIZE = 1 
+    LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
@@ -56,8 +54,8 @@ class Config():
     NAME_TO_ID = {}
     OBJ_IDS_TO_EXCLUDE = [8,18,32,33]
 
-    TRAIN_OBJ_IDS=[10]#[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
-    FRACTION_OF_NO_BOX_IMAGES = .01 
+    TRAIN_OBJ_IDS=[cid for cid in range(1,33) if cid not in OBJ_IDS_TO_EXCLUDE] 
+    FRACTION_OF_NO_BOX_IMAGES = .1 
     MAX_OBJ_DIFFICULTY= 4
     TRAIN_LIST= [
                  'Home_001_1',
@@ -76,18 +74,15 @@ class Config():
     VAL_OBJ_IDS = TRAIN_OBJ_IDS 
     VAL_FRACTION_OF_NO_BOX_IMAGES = .01 
     VAL_LIST=   [
-                 'Home_003_1',
-                 'Home_003_2',
-                 'Office_001_1',
-                 #'Home_007_1',
-                 #'Home_010_1',
-                 #'Home_011_1',
+                 'Home_007_1',
+                 'Home_010_1',
+                 'Home_011_1',
                 ]
 
     ##############################################
     #Testing
     TEST_RESIZE_IMG_FACTOR = 0 
-    TEST_RESIZE_BOXES_FACTOR = 2
+    TEST_RESIZE_BOXES_FACTOR = 0 
     MAX_DETS_PER_TARGET = 5
     SCORE_THRESH = .01
     TEST_NMS_OVERLAP_THRESH = .7
@@ -102,7 +97,7 @@ class Config():
     TEST_ONE_AT_A_TIME = False 
     ###############################################
     #Model paramters
-    ANCHOR_SCALES = [1,2,4]
+    ANCHOR_SCALES = [1,4,8]
     NUM_TARGETS = 2
     CORR_WITH_POOLED = True 
     USE_IMG_FEATS = False 

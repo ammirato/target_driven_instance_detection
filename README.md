@@ -5,7 +5,7 @@ This is an implementation of the technique described in [Target Driven Instance 
 
 ## External Requirements
 * Python 2 (might work with Python 3)
-* [PyTorch](http://pytorch.org/)   **(version 0.3.X) There are known errors with version 0.4**
+* [PyTorch](http://pytorch.org/)
 * [AVD Data](http://www.cs.unc.edu/~ammirato/active_vision_dataset_website/get_data.html) Parts 1, 2 and 3
 * [AVD processing code](https://github.com/ammirato/active_vision_dataset_processing)
 

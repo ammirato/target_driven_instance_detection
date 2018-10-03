@@ -111,6 +111,51 @@ def match_and_concat_images_list(img_list, min_size=None):
 
 
 
+def resize_target_images(img_list, size=[100,100], random_bg=False):
+    """
+    Stacks image in a list into a single ndarray 
+
+    Input parameters:
+        img_list: (list) list of ndarrays, images to be resized and stacked. 
+
+        size (optional): ([int,int]) size of resized target images. Default [100,100]
+
+    Returns:
+        (ndarray) a single ndarray with first dimension equal to the 
+        number of elements in the inputted img_list    
+    """
+
+    #resize and stack the images
+    for il,img in enumerate(img_list):
+        max_dim = max(img.shape)
+        scale = 100.0/max_dim
+        img = cv2.resize(img,(0,0),fx=scale,fy=scale)
+
+        if random_bg:
+            resized_img = np.random.randint(0,high=255,size=(size[0],size[1],img.shape[2]))
+        else:
+            if img.mean() < 127:
+                resized_img = 255*np.ones((size[0],size[1],img.shape[2]))
+            else:
+                resized_img = np.zeros((size[0],size[1],img.shape[2]))
+        resized_img[0:img.shape[0],0:img.shape[1],:] = img
+        img_list[il] = resized_img
+    return np.stack(img_list,axis=0) 
+
+
+def resize_image(img, min_dim, max_dim):
+
+     
+    img_max = max(img.shape)
+    if img_max>max_dim:
+        scale = float(max_dim)/float(img_max)
+        img = cv2.resize(img,(0,0),fx=scale,fy=scale)
+    img_min = min(img.shape[:-1])
+    if img_min<min_dim:
+        scale = float(min_dim)/float(img_min)
+        img = cv2.resize(img,(0,0),fx=scale,fy=scale)
+    return img
+
 
 def create_illumination_pattern(rows, cols, center_row,center_col,minI=.1,maxI=1,radius=None):
     '''
@@ -237,10 +282,10 @@ def normalize_image(img,cfg):
     Returns: 
         (ndarray) noralized image
     """
-    if cfg.PYTORCH_FEATURE_NET:
-        return ((img/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
-    else:
-        raise NotImplementedError
+#    if cfg.PYTORCH_FEATURE_NET:
+    return ((img/255.0) - [0.485, 0.456, 0.406])/[0.229, 0.224, 0.225]
+#    else:
+#        raise NotImplementedError
 
 
 
@@ -276,6 +321,7 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
                        fraction_of_no_box=.1,
                        instance_fname=None,
                        classification=False,
+                       black_out_ids=None,
                       ):
     """
     Returns a loader for the AVD dataset.
@@ -293,8 +339,10 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
         instance_fname (optional): (str) name of file with class ids and names
                                    If none, uses default in get_class_id_to_name
                                    Default: None
-        classification (opitional): (bool) Whether or not data is for
+        classification (optional): (bool) Whether or not data is for
                                     classification. Default: False
+        black_out_ids (optional): (list) Ids of instances whose boxes should 
+                                  be blacked out in images. Default: None
 
     Returns:
         an instance of AVD class from the AVD data_loading code 
@@ -304,6 +352,11 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
     #only consider boxes from the chosen classes
     pick_trans = AVD_transforms.PickInstances(chosen_ids,
                                               max_difficulty=max_difficulty)
+    if black_out_ids is not None:
+        black_out_trans = AVD_transforms.BlackOutObjects(black_out_ids)
+    else:
+        black_out_trans = None
+
     #compose the transforms in a specific order, first to last
     if instance_fname is None:
         id_to_name_dict = get_class_id_to_name_dict(root)
@@ -315,7 +368,8 @@ def get_AVD_dataset(root, scene_list, chosen_ids,
                          target_transform=pick_trans,
                          classification=classification,
                          class_id_to_name=id_to_name_dict,
-                         fraction_of_no_box=fraction_of_no_box)
+                         fraction_of_no_box=fraction_of_no_box,
+                         img_target_transform=black_out_trans)
     return dataset
 
 
@@ -380,6 +434,12 @@ def load_pretrained_weights(model_name):
     elif model_name == 'alexnet':
         fnet = models.alexnet(pretrained=True)
         return torch.nn.Sequential(*list(fnet.features.children()))
+    elif model_name == 'resnet101_head':
+        fnet = models.resnet101(pretrained=True)
+        return torch.nn.Sequential(*list(fnet.children())[:6])
+    elif model_name == 'vgg16_bn_head':
+        vgg16_bn = models.vgg16_bn(pretrained=True)
+        return torch.nn.Sequential(*list(vgg16_bn.features.children())[:14])
     else:
         raise NotImplementedError
         sys.exit()
@@ -578,3 +638,29 @@ def get_best_moves_dict(AVD_ROOT, scenes_list):
 
     return all_best_moves
 
+
+def get_boxes_iou(box1, box2):
+    '''
+    Returns iou between two retangles
+
+    xmin, ymin, xmax, ymax
+    '''
+
+    #get area of intersection
+    x1 = max(box1[0],box2[0]) 
+    x2 = min(box1[2],box2[2]) 
+    y1 = max(box1[1],box2[1]) 
+    y2 = min(box1[3],box2[3]) 
+    if x2>x1 and y2>y1:
+        intersection_area = (x2-x1) * (y2-y1) 
+    else:
+        intersection_area = 0 
+
+    #get area of union
+    box1_area = (box1[2]-box1[0]) * (box1[3]-box1[1])
+    box2_area = (box2[2]-box2[0]) * (box2[3]-box2[1])
+    union_area = box1_area + box2_area - intersection_area
+
+    return float(intersection_area)/union_area
+
+ 
