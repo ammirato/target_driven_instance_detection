@@ -18,7 +18,7 @@ from ILSVRC_VID_loader import VID_Loader
 import active_vision_dataset_processing.data_loading.active_vision_dataset as AVD  
 
 # load config
-cfg_file = 'configGEN4GMU' #NO FILE EXTENSTION!
+cfg_file = 'configGEN4AVD' #NO FILE EXTENSTION!
 cfg = importlib.import_module('configs.'+cfg_file)
 cfg = cfg.get_config()
 

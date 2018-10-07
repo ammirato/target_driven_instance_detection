@@ -15,8 +15,8 @@ class Config():
     TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'uw_real_and_BB/')
     #TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'HR_target/')
     TEST_OUTPUT_DIR = os.path.join(DATA_BASE_DIR, 'TestOutputs/')
-    TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/all_gmu2.json')
-    #TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split2_test.json')
+    #TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/all_gmu2.json')
+    TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/home0031.json')
     #VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
     #VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_split2_test.json')
     VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/home0031.json')
@@ -26,9 +26,9 @@ class Config():
     FEATURE_NET_NAME= 'vgg16_bn'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= 'TDID_GEN4GMU_06_740000_7.48426_0.39258_0.46357.h5'
+    FULL_MODEL_LOAD_NAME= ''
     LOAD_FULL_MODEL = False 
-    MODEL_BASE_SAVE_NAME = 'TDID_GEN4GMU_12'
+    MODEL_BASE_SAVE_NAME = 'TDID_GEN4AVDB_01'
     SAVE_FREQ = 50000
     SAVE_BY_EPOCH = False 
 
@@ -61,7 +61,7 @@ class Config():
     ID_MAP_FNAME= 'hybrid_instance_id_map.txt'
     ID_TO_NAME = {}
     NAME_TO_ID = {}
-    OBJ_IDS_TO_EXCLUDE = [8,32,33] + [5,50,10,12,14,79,28,94,96,18,21] 
+    OBJ_IDS_TO_EXCLUDE = [8,32,33] + [18,19,20,21,22,23,24,25,26,27] 
 
     TRAIN_OBJ_IDS=[cid for cid in range(1,2111) if cid not in OBJ_IDS_TO_EXCLUDE] 
     FRACTION_OF_NO_BOX_IMAGES = .1 
@@ -82,15 +82,15 @@ class Config():
     #             'Home_014_2',
                  'Office_001_1',
 
-                 #'Home_101_1',
+                 'Home_101_1',
                  #'Home_102_1',
-                 #'Home_103_1',
+                 'Home_103_1',
                  #'Home_104_1',
-                 #'Home_105_1',
+                 'Home_105_1',
                  #'Home_106_1',
-                 #'Home_107_1',
+                 'Home_107_1',
                  #'Home_108_1',
-                 #'Home_109_1',
+                 'Home_109_1',
 
                  'Gen_010_2',
                  'Gen_010_2',
@@ -120,7 +120,7 @@ class Config():
                  'Office_205_2',
                 ]
 
-    TEST_ONLY_OBJ_IDS = [5,50,10,12,14,79,28,94,96,18,21]
+    TEST_ONLY_OBJ_IDS = [18,19,20,21,22,23,24,25,26,27]
     #VAL_OBJ_IDS = TRAIN_OBJ_IDS + TEST_ONLY_OBJ_IDS 
     VAL_OBJ_IDS =[1,2,3,4,6,7,9,11,13,15,16,17]# TRAIN_OBJ_IDS 
     VAL_FRACTION_OF_NO_BOX_IMAGES =1
@@ -128,15 +128,7 @@ class Config():
                  'Home_003_1',
                 ]
     TEST_ONLY_LIST=   [
-                 'Home_101_1',
-                 'Home_102_1',
-                 'Home_103_1',
-                 'Home_104_1',
-                 'Home_105_1',
-                 'Home_106_1',
-                 'Home_107_1',
-                 'Home_108_1',
-                 'Home_109_1',
+                 'Home_003_1',
                 ]
 
     ##############################################
