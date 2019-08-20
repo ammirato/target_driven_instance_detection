@@ -8,6 +8,7 @@ import sys
 
 from .anchors.proposal_layer import proposal_layer as proposal_layer_py
 from .anchors.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
+from .attention import CoAttention
 from utils import *
 
 class TDID(torch.nn.Module):
@@ -27,13 +28,22 @@ class TDID(torch.nn.Module):
 
         self.features,self._feat_stride,self.num_feature_channels = \
                                     self.get_feature_net(cfg.FEATURE_NET_NAME)
-        self.embedding_conv = self.get_embedding_conv(cfg)
-        self.corr_conv = Conv2d(cfg.NUM_TARGETS*self.num_feature_channels,
-                              self.num_feature_channels, 3, 
-                              relu=True, same_padding=True)
-        self.diff_conv = Conv2d(cfg.NUM_TARGETS*self.num_feature_channels,
-                                self.num_feature_channels, 3, 
-                                relu=True, same_padding=True)
+
+        use_attention = getattr(cfg, "ATTENTION_ENABLED", False)
+        if use_attention:
+            print(">" * 100)
+            print("Construct the attention block")
+            self.coattention_layer = CoAttention(
+                in_channels=512,
+                combination_mode=cfg.ATTENTION_COMBINATION_MODE)
+        else:
+            self.embedding_conv = self.get_embedding_conv(cfg)
+            self.corr_conv = Conv2d(cfg.NUM_TARGETS*self.num_feature_channels,
+                                  self.num_feature_channels, 3,
+                                  relu=True, same_padding=True)
+            self.diff_conv = Conv2d(cfg.NUM_TARGETS*self.num_feature_channels,
+                                    self.num_feature_channels, 3,
+                                    relu=True, same_padding=True)
         #for getting output size of score and bbbox convs
         # 3 = number of anchor aspect ratios
         # 2 = number of classes (background, target)
@@ -45,6 +55,8 @@ class TDID(torch.nn.Module):
         self.class_cross_entropy_loss = None
         self.box_regression_loss = None
         self.roi_cross_entropy_loss = None
+
+        self.use_attention = use_attention
 
     @property
     def loss(self):
@@ -85,75 +97,96 @@ class TDID(torch.nn.Module):
             img_features = img_data
             target_features = target_data 
         else:
+            # B x C x H x W (33x60)
             img_features = self.features(img_data)
+            # B x C x h x w (h << H) (5x5)
             target_features = self.features(target_data)
 
 
-        all_corrs = []
-        all_diffs = []
-        for batch_ind in range(img_features.size()[0]):
-            img_ind = np_to_variable(np.asarray([batch_ind]),
-                                     is_cuda=True, dtype=torch.LongTensor)
-            cur_img_feats = torch.index_select(img_features,0,img_ind)
-
-            cur_diffs = []
-            cur_corrs = []
-            for target_type in range(self.cfg.NUM_TARGETS):
-                target_ind = np_to_variable(np.asarray([batch_ind*
-                                            self.cfg.NUM_TARGETS+target_type]),
-                                            is_cuda=True,dtype=torch.LongTensor)
-                cur_target_feats = torch.index_select(target_features,0,
-                                                      target_ind[0])
-                cur_target_feats = cur_target_feats.view(-1,1,
-                                                     cur_target_feats.size()[2],
-                                                     cur_target_feats.size()[3])
-                pooled_target_feats = F.max_pool2d(cur_target_feats,
-                                         (cur_target_feats.size()[2],
-                                          cur_target_feats.size()[3]))
-
-                cur_diffs.append(cur_img_feats -
-                    pooled_target_feats.permute(1,0,2,3).expand_as(cur_img_feats))
-                if self.cfg.CORR_WITH_POOLED:
-                    cur_corrs.append(F.conv2d(cur_img_feats,
-                                             pooled_target_feats,
-                                             groups=self.num_feature_channels))
-                else:
-                    target_conv_padding = (max(0,int(
-                                          target_features.size()[2]/2)), 
-                                           max(0,int(
-                                           target_features.size()[3]/2)))
-                    cur_corrs.append(F.conv2d(cur_img_feats,cur_target_feats,
-                                             padding=target_conv_padding,
-                                             groups=self.num_feature_channels))
-                
-
-            cur_corrs = torch.cat(cur_corrs,1)
-            cur_corrs = self.select_to_match_dimensions(cur_corrs,cur_img_feats)
-            all_corrs.append(cur_corrs)
-            all_diffs.append(torch.cat(cur_diffs,1))
-
-        corr = self.corr_conv(torch.cat(all_corrs,0))
-        diff = self.diff_conv(torch.cat(all_diffs,0))
-      
-        if self.cfg.USE_IMG_FEATS and self.cfg.USE_DIFF_FEATS:
-            if self.cfg.USE_CC_FEATS: 
-                concat_feats = torch.cat([corr,img_features, diff],1) 
-            else:
-                concat_feats = torch.cat([img_features, diff],1) 
-        elif self.cfg.USE_IMG_FEATS:
-            if self.cfg.USE_CC_FEATS: 
-                concat_feats = torch.cat([corr,img_features],1) 
-            else:
-                concat_feats = torch.cat([img_features],1) 
-        elif self.cfg.USE_DIFF_FEATS:
-            if self.cfg.USE_CC_FEATS: 
-                concat_feats = torch.cat([corr,diff],1) 
-            else:
-                concat_feats = torch.cat([diff],1) 
+        if self.use_attention:
+            embedding_feats = self.coattention_layer(
+                img_features,
+                target_features,
+                mode=self.cfg.ATTENTION_NORMALIZE_MODE)
         else:
-            concat_feats = corr 
+            # batch-separated attention here instead of the ###
 
-        embedding_feats = self.embedding_conv(concat_feats)
+            ######################
+            all_corrs = []
+            all_diffs = []
+            for batch_ind in range(img_features.size()[0]):
+                img_ind = np_to_variable(np.asarray([batch_ind]),
+                                         is_cuda=True, dtype=torch.LongTensor)
+                # 1 x C x H x W
+                cur_img_feats = torch.index_select(img_features,0,img_ind)
+
+                cur_diffs = []
+                cur_corrs = []
+                for target_type in range(self.cfg.NUM_TARGETS):
+                    target_ind = np_to_variable(np.asarray([batch_ind*
+                                                self.cfg.NUM_TARGETS+target_type]),
+                                                is_cuda=True,dtype=torch.LongTensor)
+                    cur_target_feats = torch.index_select(target_features,0,
+                                                          target_ind[0])
+                    cur_target_feats = cur_target_feats.view(-1,1,
+                                                         cur_target_feats.size()[2],
+                                                         cur_target_feats.size()[3])
+                    # 1 x 1 x 1 x C
+                    pooled_target_feats = F.max_pool2d(cur_target_feats,
+                                             (cur_target_feats.size()[2],
+                                              cur_target_feats.size()[3]))
+
+                    cur_diffs.append(cur_img_feats -
+                        pooled_target_feats.permute(1,0,2,3).expand_as(cur_img_feats))
+                    if self.cfg.CORR_WITH_POOLED:
+                        # we are here
+                        cur_corrs.append(F.conv2d(cur_img_feats,
+                                                 pooled_target_feats,
+                                                 groups=self.num_feature_channels))
+                    else:
+                        target_conv_padding = (max(0,int(
+                                              target_features.size()[2]/2)),
+                                               max(0,int(
+                                               target_features.size()[3]/2)))
+                        cur_corrs.append(F.conv2d(cur_img_feats,cur_target_feats,
+                                                 padding=target_conv_padding,
+                                                 groups=self.num_feature_channels))
+
+
+                cur_corrs = torch.cat(cur_corrs,1)
+                cur_corrs = self.select_to_match_dimensions(cur_corrs,cur_img_feats)
+                all_corrs.append(cur_corrs)
+                all_diffs.append(torch.cat(cur_diffs,1))
+
+            ######################
+
+            corr = self.corr_conv(torch.cat(all_corrs,0))
+            diff = self.diff_conv(torch.cat(all_diffs,0))
+
+            if self.cfg.USE_IMG_FEATS and self.cfg.USE_DIFF_FEATS:
+                if self.cfg.USE_CC_FEATS:
+                    concat_feats = torch.cat([corr,img_features, diff],1)
+                else:
+                    concat_feats = torch.cat([img_features, diff],1)
+            elif self.cfg.USE_IMG_FEATS:
+                if self.cfg.USE_CC_FEATS:
+                    concat_feats = torch.cat([corr,img_features],1)
+                else:
+                    concat_feats = torch.cat([img_features],1)
+            elif self.cfg.USE_DIFF_FEATS:
+                if self.cfg.USE_CC_FEATS:
+                    # we are here
+                    # B x 2D x H x W
+                    concat_feats = torch.cat([corr,diff],1)
+                else:
+                    concat_feats = torch.cat([diff],1)
+            else:
+                concat_feats = corr
+
+            embedding_feats = self.embedding_conv(concat_feats)
+
+
+            #####################
         class_score = self.score_conv(embedding_feats)
         class_score_reshape = self.reshape_layer(class_score, 2)
         class_prob = F.softmax(class_score_reshape)

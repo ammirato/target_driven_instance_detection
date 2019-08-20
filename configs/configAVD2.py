@@ -7,32 +7,38 @@ class Config():
     """
 
     #Directories - MUST BE CHANGED for your environment
-    DATA_BASE_DIR = '/net/bvisionserver3/playpen/ammirato/sandbox/code/target_driven_instance_detection/Data/'
-    AVD_ROOT_DIR = '/net/bvisionserver3/playpen10/ammirato/Data/HalvedRohitData/'
+    # DATA_BASE_DIR = '/net/bvisionserver3/playpen/ammirato/sandbox/code/TDID/target_driven_instance_detection/Data/'
+    DATA_BASE_DIR = '/net/bvisionserver1/playmirror/mshvets/Phil_TDID/target_driven_instance_detection/Data/'
+    AVD_ROOT_DIR = '/net/bvisionserver3/playpen1/ammirato/Data/TDID_datasets/HalvedActiveVisionDataset/'
     FULL_MODEL_LOAD_DIR= os.path.join(DATA_BASE_DIR, 'Models/')
     SNAPSHOT_SAVE_DIR= os.path.join(DATA_BASE_DIR , 'Models/')
     META_SAVE_DIR = os.path.join(DATA_BASE_DIR, 'ModelsMeta/')
     TARGET_IMAGE_DIR= os.path.join(DATA_BASE_DIR, 'AVD_and_BigBIRD_targets_v1/')
     TEST_OUTPUT_DIR = os.path.join(DATA_BASE_DIR, 'TestOutputs/')
     TEST_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR, 'GT/AVD_split2_test.json')
-    VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_part3_val.json')
+    VAL_GROUND_TRUTH_BOXES = os.path.join(DATA_BASE_DIR ,'GT/AVD_split2_test.json')
 
+    ATTENTION_ENABLED = True
+    # "sum", or "stack-reduce", or "attention-only"
+    ATTENTION_COMBINATION_MODE = "attention-only"
+    # "average" or "softmax"
+    ATTENTION_NORMALIZE_MODE = "average"
 
     #Model Loading and saving 
     FEATURE_NET_NAME= 'vgg16_bn'
     PYTORCH_FEATURE_NET= True
     USE_PRETRAINED_WEIGHTS = True
-    FULL_MODEL_LOAD_NAME= 'TDID_AVD2_03_15_26806_0.36337_0.35057.h5'
-    LOAD_FULL_MODEL= True 
-    MODEL_BASE_SAVE_NAME = 'TDID_AVD2_04'
-    SAVE_FREQ  = 15 
+    FULL_MODEL_LOAD_NAME= ''
+    LOAD_FULL_MODEL= False 
+    MODEL_BASE_SAVE_NAME = 'TDID_AVD2average_002'
+    SAVE_FREQ  = 5
     SAVE_BY_EPOCH = True 
 
 
     #Training 
-    MAX_NUM_EPOCHS= 16 
+    MAX_NUM_EPOCHS= 50 
     BATCH_SIZE = 5 
-    LEARNING_RATE = .0001
+    LEARNING_RATE = .001
     MOMENTUM = .9
     WEIGHT_DECAY = .0005
     DISPLAY_INTERVAL = 10
